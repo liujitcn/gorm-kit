@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	g := kitgen.New(
+	g := kitgen.NewGen(
 		kitgen.WithDriver("mysql"),
 		kitgen.WithSource("root:112233@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=True&loc=Local&timeout=1000ms"),
 		kitgen.WithOutputPath("query"),

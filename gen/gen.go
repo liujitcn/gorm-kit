@@ -10,10 +10,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var initialisms = map[string]string{
-	"api": "API",
-}
-
 // Gen 封装 gorm/gen 生成能力。
 type Gen struct {
 	opts options
@@ -58,7 +54,8 @@ func (g *Gen) Execute() error {
 		WithUnitTest:      false,
 	})
 	generator.UseDB(db)
-	generator.WithModelNameStrategy(tableToModelName)
+	// 直接使用 options 内的缩写映射（默认值已在 defaultOptions 中初始化）。
+	generator.WithModelNameStrategy(g.buildTableToModelNameStrategy())
 
 	// 4. 基于当前库全部表生成模型与查询代码。
 	generator.ApplyBasic(generator.GenerateAllTable()...)
@@ -66,18 +63,21 @@ func (g *Gen) Execute() error {
 	return nil
 }
 
-// tableToModelName 将下划线表名转换为驼峰模型名，并保留约定缩写（例如 API）。
-func tableToModelName(tableName string) string {
-	parts := strings.Split(tableName, "_")
-	for i, part := range parts {
-		lowerPart := strings.ToLower(part)
-		if acronym, ok := initialisms[lowerPart]; ok {
-			parts[i] = acronym
-			continue
+// buildTableToModelNameStrategy 构建“表名 -> 模型名”转换策略。
+func (g *Gen) buildTableToModelNameStrategy() func(tableName string) string {
+	acronyms := g.opts.acronyms
+	return func(tableName string) string {
+		parts := strings.Split(tableName, "_")
+		for i, part := range parts {
+			lowerPart := strings.ToLower(part)
+			if acronym, ok := acronyms[lowerPart]; ok {
+				parts[i] = acronym
+				continue
+			}
+			parts[i] = upperFirst(lowerPart)
 		}
-		parts[i] = upperFirst(lowerPart)
+		return strings.Join(parts, "")
 	}
-	return strings.Join(parts, "")
 }
 
 func upperFirst(s string) string {

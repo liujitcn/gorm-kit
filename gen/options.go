@@ -20,6 +20,7 @@ type options struct {
 	source       string
 	outPath      string
 	modelPkgPath string
+	acronyms     map[string]string
 }
 
 // WithDriver 设置数据库驱动。
@@ -42,8 +43,8 @@ func WithSource(source string) Option {
 	}
 }
 
-// WithOutPath 设置 query 输出目录。
-func WithOutPath(path string) Option {
+// WithOutputPath 设置 query 输出目录。
+func WithOutputPath(path string) Option {
 	return func(o *options) {
 		// 仅在非空时覆盖，避免误清空默认值。
 		if strings.TrimSpace(path) != "" {
@@ -52,14 +53,59 @@ func WithOutPath(path string) Option {
 	}
 }
 
-// WithModelPkgPath 设置 model 包路径。
-func WithModelPkgPath(path string) Option {
+// WithModelPackagePath 设置 model 包路径。
+func WithModelPackagePath(path string) Option {
 	return func(o *options) {
 		// 仅在非空时覆盖，避免误清空默认值。
 		if strings.TrimSpace(path) != "" {
 			o.modelPkgPath = path
 		}
 	}
+}
+
+// WithAcronym 追加单个缩写映射（key 不区分大小写）。
+func WithAcronym(key, value string) Option {
+	return func(o *options) {
+		k := strings.ToLower(strings.TrimSpace(key))
+		v := strings.TrimSpace(value)
+		if k == "" || v == "" {
+			return
+		}
+		if o.acronyms == nil {
+			o.acronyms = make(map[string]string)
+		}
+		o.acronyms[k] = v
+	}
+}
+
+// WithAcronyms 批量追加缩写映射（key 不区分大小写）。
+func WithAcronyms(m map[string]string) Option {
+	return func(o *options) {
+		if len(m) == 0 {
+			return
+		}
+		if o.acronyms == nil {
+			o.acronyms = make(map[string]string, len(m))
+		}
+		for key, value := range m {
+			k := strings.ToLower(strings.TrimSpace(key))
+			v := strings.TrimSpace(value)
+			if k == "" || v == "" {
+				continue
+			}
+			o.acronyms[k] = v
+		}
+	}
+}
+
+// WithOutPath 兼容旧命名，内部转发到 WithOutputPath。
+func WithOutPath(path string) Option {
+	return WithOutputPath(path)
+}
+
+// WithModelPkgPath 兼容旧命名，内部转发到 WithModelPackagePath。
+func WithModelPkgPath(path string) Option {
+	return WithModelPackagePath(path)
 }
 
 // defaultOptions 提供最小可运行配置。
@@ -69,5 +115,24 @@ func defaultOptions() options {
 		source:       defaultSource,
 		outPath:      defaultOutPath,
 		modelPkgPath: defaultModelPkgPath,
+		// 默认缩写在 options 初始化时直接注入，后续仅做增量覆盖。
+		acronyms: map[string]string{
+			"api":   "API",
+			"id":    "ID",
+			"ip":    "IP",
+			"url":   "URL",
+			"uri":   "URI",
+			"http":  "HTTP",
+			"https": "HTTPS",
+			"tcp":   "TCP",
+			"udp":   "UDP",
+			"rpc":   "RPC",
+			"sql":   "SQL",
+			"db":    "DB",
+			"uid":   "UID",
+			"uuid":  "UUID",
+			"sku":   "SKU",
+			"sn":    "SN",
+		},
 	}
 }

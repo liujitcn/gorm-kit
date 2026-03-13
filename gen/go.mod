@@ -4,7 +4,6 @@ go 1.26.0
 
 require (
 	github.com/liujitcn/kratos-kit/database/gorm/driver v0.0.6
-	gorm.io/driver/mysql v1.6.0
 	gorm.io/gen v0.3.27
 	gorm.io/gorm v1.31.1
 )
@@ -20,6 +19,7 @@ require (
 	golang.org/x/text v0.20.0 // indirect
 	golang.org/x/tools v0.39.0 // indirect
 	gorm.io/datatypes v1.2.4 // indirect
+	gorm.io/driver/mysql v1.5.7 // indirect
 	gorm.io/hints v1.1.0 // indirect
 	gorm.io/plugin/dbresolver v1.6.2 // indirect
 )

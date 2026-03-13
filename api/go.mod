@@ -1,4 +1,4 @@
-module github.com/liujitcn/kratos-kit/api
+module github.com/liujitcn/gorm-kit/api
 
 go 1.26.0
 

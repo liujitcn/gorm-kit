@@ -29,17 +29,39 @@ func NewGen(opts ...Option) *Gen {
 
 // Execute 执行代码生成。
 func (g *Gen) Execute() error {
+	generator, err := g.newGenerator()
+	if err != nil {
+		return err
+	}
+
+	// 4. 基于当前库全部表生成模型与查询代码。
+	generator.ApplyBasic(generator.GenerateAllTable()...)
+	generator.Execute()
+	return nil
+}
+
+// GenerateAllTable 导出当前配置下数据库全部表的生成结果。
+func (g *Gen) GenerateAllTable() ([]interface{}, error) {
+	generator, err := g.newGenerator()
+	if err != nil {
+		return nil, err
+	}
+	return generator.GenerateAllTable(), nil
+}
+
+// newGenerator 按当前配置初始化 gorm/gen 生成器。
+func (g *Gen) newGenerator() (*gormgen.Generator, error) {
 	opts := g.opts
 	// 1. 根据 driver 名称加载 gorm dialector 构造器。
 	gormDriver, ok := driver.Opens[opts.driver]
 	if !ok {
-		return fmt.Errorf("gorm驱动加载失败【%s】", opts.driver)
+		return nil, fmt.Errorf("gorm驱动加载失败【%s】", opts.driver)
 	}
 
 	// 2. 建立数据库连接。
 	db, err := gorm.Open(gormDriver(opts.source), &gorm.Config{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// 3. 初始化生成器并写入基础配置。
@@ -56,11 +78,7 @@ func (g *Gen) Execute() error {
 	generator.UseDB(db)
 	// 直接使用 options 内的缩写映射（默认值已在 defaultOptions 中初始化）。
 	generator.WithModelNameStrategy(g.buildTableToModelNameStrategy())
-
-	// 4. 基于当前库全部表生成模型与查询代码。
-	generator.ApplyBasic(generator.GenerateAllTable()...)
-	generator.Execute()
-	return nil
+	return generator, nil
 }
 
 // buildTableToModelNameStrategy 构建“表名 -> 模型名”转换策略。

@@ -18,7 +18,22 @@
 go test ./...
 ```
 
-### 2. 使用 BaseRepo + QueryOption（repo）
+### 2. 常用 Make 目标
+
+当前 `Makefile` 仅保留以下目标：
+
+```bash
+make help
+make tag
+```
+
+其中 `make tag` 会调用 `scripts/tag_release.py`，默认扫描仓库中的 `go.mod` 进行版本打标；也可以通过 `MODULE` 指定起始目录：
+
+```bash
+make tag MODULE=repo
+```
+
+### 3. 使用 BaseRepo + QueryOption（repo）
 
 `repo` 层直接复用 `gorm/gen` 的强类型字段构建查询。`NewBaseRepo` 当前需要显式传入 `queryDAO`、主键字段访问器和实体主键读取函数：
 
@@ -91,7 +106,7 @@ list, err := userRepo.FindAll(
 - 查询字段与操作符全部走 `gorm/gen` 强类型 API，错误尽量前置到编译期。
 - `BaseRepo` 负责通用 CRUD、分页以及按条件更新/删除，不再承担 DSL 解释器的职责。
 
-### 3. 使用代码生成器（gen）
+### 4. 使用代码生成器（gen）
 
 参考：
 

@@ -14,8 +14,8 @@ type BaseRepo[T any] interface {
 	Create(ctx context.Context, entity *T) error
 	BatchCreate(ctx context.Context, list []*T) error
 	Delete(ctx context.Context, opts ...QueryOption) error
-	DeleteById(ctx context.Context, id int64) error
-	DeleteByIds(ctx context.Context, ids []int64) error
+	DeleteByID(ctx context.Context, id int64) error
+	DeleteByIDs(ctx context.Context, ids []int64) error
 	Update(ctx context.Context, entity *T, opts ...QueryOption) error
 	UpdateByID(ctx context.Context, entity *T) error
 	Find(ctx context.Context, opts ...QueryOption) (*T, error)
@@ -75,8 +75,8 @@ func (b baseRepo[T]) Delete(ctx context.Context, opts ...QueryOption) error {
 	return res.Error
 }
 
-// DeleteById 按主键删除单条记录。
-func (b baseRepo[T]) DeleteById(ctx context.Context, id int64) error {
+// DeleteByID 按主键删除单条记录。
+func (b baseRepo[T]) DeleteByID(ctx context.Context, id int64) error {
 	if id == 0 {
 		return nil
 	}
@@ -91,8 +91,8 @@ func (b baseRepo[T]) DeleteById(ctx context.Context, id int64) error {
 	return res.Error
 }
 
-// DeleteByIds 按主键批量删除记录。
-func (b baseRepo[T]) DeleteByIds(ctx context.Context, ids []int64) error {
+// DeleteByIDs 按主键批量删除记录。
+func (b baseRepo[T]) DeleteByIDs(ctx context.Context, ids []int64) error {
 	if len(ids) == 0 {
 		return nil
 	}

@@ -1,4 +1,4 @@
-package gen
+package main
 
 import (
 	"strings"
@@ -7,10 +7,31 @@ import (
 const (
 	// 默认连接与输出参数，供 NewGen 未传 Option 时兜底使用。
 	defaultSource       = "root:112233@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=True&loc=Local&timeout=1000ms"
+	defaultDriver       = "mysql"
 	defaultOutPath      = "query"
 	defaultModelPkgPath = "models"
-	defaultDriver       = "mysql"
+	defaultDataPath     = "data"
 )
+
+// defaultAcronyms 定义模型命名与 data 代码生成共用的默认缩写表。
+var defaultAcronyms = map[string]string{
+	"api":   "API",
+	"id":    "ID",
+	"ip":    "IP",
+	"url":   "URL",
+	"uri":   "URI",
+	"http":  "HTTP",
+	"https": "HTTPS",
+	"tcp":   "TCP",
+	"udp":   "UDP",
+	"rpc":   "RPC",
+	"sql":   "SQL",
+	"db":    "DB",
+	"uid":   "UID",
+	"uuid":  "UUID",
+	"sku":   "SKU",
+	"sn":    "SN",
+}
 
 type Option func(o *options)
 
@@ -20,6 +41,7 @@ type options struct {
 	source       string
 	outPath      string
 	modelPkgPath string
+	dataPath     string
 	acronyms     map[string]string
 }
 
@@ -59,6 +81,16 @@ func WithModelPkgPath(path string) Option {
 		// 仅在非空时覆盖，避免误清空默认值。
 		if strings.TrimSpace(path) != "" {
 			o.modelPkgPath = path
+		}
+	}
+}
+
+// WithDataPath 设置 data 输出目录。
+func WithDataPath(path string) Option {
+	return func(o *options) {
+		// 仅在非空时覆盖，避免误清空默认值。
+		if strings.TrimSpace(path) != "" {
+			o.dataPath = path
 		}
 	}
 }
@@ -105,24 +137,17 @@ func defaultOptions() options {
 		source:       defaultSource,
 		outPath:      defaultOutPath,
 		modelPkgPath: defaultModelPkgPath,
-		// 默认缩写在 options 初始化时直接注入，后续仅做增量覆盖。
-		acronyms: map[string]string{
-			"api":   "API",
-			"id":    "ID",
-			"ip":    "IP",
-			"url":   "URL",
-			"uri":   "URI",
-			"http":  "HTTP",
-			"https": "HTTPS",
-			"tcp":   "TCP",
-			"udp":   "UDP",
-			"rpc":   "RPC",
-			"sql":   "SQL",
-			"db":    "DB",
-			"uid":   "UID",
-			"uuid":  "UUID",
-			"sku":   "SKU",
-			"sn":    "SN",
-		},
+		dataPath:     defaultDataPath,
+		// 初始化时复制默认缩写，避免运行期改动污染共享默认值。
+		acronyms: cloneAcronyms(defaultAcronyms),
 	}
+}
+
+// cloneAcronyms 复制缩写映射，确保调用方拿到独立副本。
+func cloneAcronyms(src map[string]string) map[string]string {
+	dst := make(map[string]string, len(src))
+	for key, value := range src {
+		dst[key] = value
+	}
+	return dst
 }

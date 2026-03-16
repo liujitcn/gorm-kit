@@ -1,38 +1,71 @@
 # gen
 
-当前目录提供 gorm/gen 的代码生成封装。
+当前目录提供基于 `gorm/gen` 的代码生成入口，支持：
 
-```go
-package main
+- 通过 `config.yaml` 加载生成配置
+- 通过命令行参数覆盖配置文件中的单项字段
+- 生成 `models`、`query` 与 `data`
+- 每次生成 `data` 前自动清空目标目录，避免旧文件残留
 
-import (
-	"log"
+## 配置示例
 
-	kitgen "github.com/liujitcn/gorm-kit/gen"
-)
+配置字段与 `options` 保持一致：
 
-func main() {
-	g := kitgen.NewGen(
-		kitgen.WithDriver("mysql"),
-		kitgen.WithSource("root:112233@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=True&loc=Local&timeout=1000ms"),
-		kitgen.WithOutputPath("query"),
-		kitgen.WithModelPackagePath("models"),
-		kitgen.WithAcronym("erp", "ERP"),
-		kitgen.WithAcronyms(map[string]string{
-			"crm": "CRM",
-		}),
-	)
-	if err := g.Execute(); err != nil {
-		log.Fatal(err)
-	}
-}
+```yaml
+driver: mysql
+source: root:112233@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=True&loc=Local&timeout=1000ms
+out_path: query
+model_pkg_path: models
+data_path: ../../shop-gorm-gen/data
+acronyms:
+  api: API
+  sku: SKU
 ```
 
-说明：
-- `WithDriver` 未设置时，默认 `mysql`。
-- `WithSource` 未设置时，优先读取环境变量 `GORM_GEN_DSN`，再使用内置默认值。
-- `WithOutputPath` 未设置时，默认 `query`。
-- `WithModelPackagePath` 未设置时，默认 `models`。
-- `WithAcronym` / `WithAcronyms` 可追加模型命名缩写映射（外部配置会覆盖同名默认值）。
-- `WithInitialism` / `WithInitialisms` 为兼容旧版本的别名方法，建议逐步迁移到 `WithAcronym` / `WithAcronyms`。
-- `WithOutPath` / `WithModelPkgPath` / `NewGen` 为兼容旧版本的别名方法，建议逐步迁移到 `WithOutputPath` / `WithModelPackagePath` / `New`。
+## 使用方式
+
+默认读取当前目录下的 `config.yaml`：
+
+```bash
+go run .
+```
+
+指定配置文件路径：
+
+```bash
+go run . -config ./config.yaml
+```
+
+使用命令行覆盖配置文件中的单项字段：
+
+```bash
+go run . -config ./config.yaml -set model_pkg_path=models1/tst -set out_path=query1/tet -set data_path=./data1
+go run . -set source='root:123456@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=True&loc=Local&timeout=1000ms'
+go run . -set acronyms.api=API -set acronyms.sku=SKU
+```
+
+## 覆盖项
+
+当前支持以下 `-set key=value` 覆盖项：
+
+- `driver`
+- `source`
+- `out_path`
+- `model_pkg_path`
+- `data_path`
+- `acronyms.xxx`
+
+## 生成规则
+
+- `model_pkg_path`、`out_path`、`data_path` 会同时影响对应目录的生成结果
+- `data` 中引用的 `models`、`query` 会跟随实际导入路径与目标包名变化
+- `data` 包名取 `data_path` 最后一层目录名
+- 生成 `data` 前会先删除整个 `data_path`
+
+## 默认值
+
+- `driver` 默认 `mysql`
+- `source` 默认使用内置 DSN
+- `out_path` 默认 `query`
+- `model_pkg_path` 默认 `models`
+- `data_path` 默认 `../../shop-gorm-gen/data`

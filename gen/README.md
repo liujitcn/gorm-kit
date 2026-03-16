@@ -60,6 +60,7 @@ go run . -set acronyms.api=API -set acronyms.sku=SKU
 - `model_pkg_path`、`out_path`、`data_path` 会同时影响对应目录的生成结果
 - `data` 中引用的 `models`、`query` 会跟随实际导入路径与目标包名变化
 - `data` 包名取 `data_path` 最后一层目录名
+- `data` 中每个 Repo 默认生成导出结构体，并内嵌通用 `BaseRepo` 与 `*Data`
 - 生成 `data` 前会先删除整个 `data_path`
 
 ## 默认值

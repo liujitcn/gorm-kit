@@ -92,16 +92,13 @@ import (
 )
 
 // {{ .Table.RepoName }}Repo 定义 {{ .Table.ModelName }} 的基础仓储能力。
-type {{ .Table.RepoName }}Repo interface {
+type {{ .Table.RepoName }}Repo struct {
 	baseRepo.BaseRepo[{{ .ModelPackage }}.{{ .Table.ModelName }}]
-}
-
-type {{ .Table.RepoName | lowerFirst }}Repo struct {
-	baseRepo.BaseRepo[{{ .ModelPackage }}.{{ .Table.ModelName }}]
+	*Data
 }
 
 // New{{ .Table.RepoName }}Repo 创建 {{ .Table.ModelName }} 基础仓储实例。
-func New{{ .Table.RepoName }}Repo(data *Data) {{ .Table.RepoName }}Repo {
+func New{{ .Table.RepoName }}Repo(data *Data) *{{ .Table.RepoName }}Repo {
 	base := baseRepo.NewBaseRepo[{{ .ModelPackage }}.{{ .Table.ModelName }}](
 		func(ctx context.Context) gen.Dao {
 			return new(data.Query(ctx).{{ .Table.ModelName }}.WithContext(ctx).DO)
@@ -113,8 +110,9 @@ func New{{ .Table.RepoName }}Repo(data *Data) {{ .Table.RepoName }}Repo {
 			return entity.ID
 		},
 	)
-	return &{{ .Table.RepoName | lowerFirst }}Repo{
+	return &{{ .Table.RepoName }}Repo{
 		BaseRepo: base,
+		Data:     data,
 	}
 }
 `

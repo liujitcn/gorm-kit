@@ -140,6 +140,9 @@ func (b baseRepo[T]) UpdateByID(ctx context.Context, entity *T) error {
 
 // Find 查询单条记录。
 func (b baseRepo[T]) Find(ctx context.Context, opts ...QueryOption) (*T, error) {
+	if err := validateRequiredQueryOptions(opts...); err != nil {
+		return nil, err
+	}
 	dao := ApplyQueryOptions(b.queryDAO(ctx), opts...)
 	result, err := dao.First()
 	if err != nil {

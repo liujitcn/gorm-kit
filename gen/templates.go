@@ -104,10 +104,16 @@ func New{{ .Table.RepoName }}Repo(data *Data) *{{ .Table.RepoName }}Repo {
 			return new(data.Query(ctx).{{ .Table.ModelName }}.WithContext(ctx).DO)
 		},
 		func(ctx context.Context) field.Int64 {
-			return data.Query(ctx).{{ .Table.ModelName }}.ID
+{{- if .Table.HasCompositePrimaryKey }}
+			// 联合主键场景默认使用第一个 int64 类型的主键字段。
+{{- end }}
+			return data.Query(ctx).{{ .Table.ModelName }}.{{ .Table.PrimaryKeyField }}
 		},
 		func(entity *{{ .ModelPackage }}.{{ .Table.ModelName }}) int64 {
-			return entity.ID
+{{- if .Table.HasCompositePrimaryKey }}
+			// 联合主键场景默认使用实体上的第一个 int64 类型主键字段值。
+{{- end }}
+			return entity.{{ .Table.PrimaryKeyField }}
 		},
 	)
 	return &{{ .Table.RepoName }}Repo{

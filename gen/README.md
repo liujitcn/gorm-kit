@@ -61,6 +61,7 @@ go run . -set acronyms.api=API -set acronyms.sku=SKU
 - `data` 中引用的 `models`、`query` 会跟随实际导入路径与目标包名变化
 - `data` 包名取 `data_path` 最后一层目录名
 - `data` 中每个 Repo 默认生成导出结构体，并内嵌通用 `BaseRepo` 与 `*Data`
+- `data` 中 Repo 主键优先取模型声明顺序上的第一个 `int64` 主键字段；联合主键表同样按该规则生成，若不存在 `int64` 主键则回退到第一个主键字段
 - 生成 `data` 前会先删除整个 `data_path`
 
 ## 默认值

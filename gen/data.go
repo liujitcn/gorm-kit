@@ -10,12 +10,16 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+
+	genField "gorm.io/gen/field"
 )
 
 type tableMeta struct {
-	TableName string
-	ModelName string
-	RepoName  string
+	TableName              string
+	ModelName              string
+	RepoName               string
+	PrimaryKeyField        string
+	HasCompositePrimaryKey bool
 }
 
 type dataTemplateContext struct {
@@ -89,9 +93,11 @@ func extractTableMeta(tableModel any) (tableMeta, bool) {
 		modelName = buildModelName(tableName)
 	}
 	return tableMeta{
-		TableName: tableName,
-		ModelName: modelName,
-		RepoName:  buildRepoName(tableName),
+		TableName:              tableName,
+		ModelName:              modelName,
+		RepoName:               buildRepoName(tableName),
+		PrimaryKeyField:        extractFirstPrimaryKeyField(value),
+		HasCompositePrimaryKey: countPrimaryKeyFields(value) > 1,
 	}, true
 }
 
@@ -102,6 +108,80 @@ func readStringField(value reflect.Value, fieldName string) (string, bool) {
 		return "", false
 	}
 	return fieldValue.String(), true
+}
+
+// extractFirstPrimaryKeyField 提取主键字段。
+// 联合主键场景优先使用声明顺序上的第一个 int64 主键字段；若不存在，则回退到第一个主键字段。
+func extractFirstPrimaryKeyField(value reflect.Value) string {
+	fieldsValue := value.FieldByName("Fields")
+	if !fieldsValue.IsValid() || fieldsValue.Kind() != reflect.Slice {
+		return "ID"
+	}
+	firstPrimaryKeyField := ""
+	for i := 0; i < fieldsValue.Len(); i++ {
+		fieldValue := fieldsValue.Index(i)
+		if fieldValue.Kind() == reflect.Ptr {
+			if fieldValue.IsNil() {
+				continue
+			}
+			fieldValue = fieldValue.Elem()
+		}
+		if fieldValue.Kind() != reflect.Struct {
+			continue
+		}
+		if !hasPrimaryKeyTag(fieldValue.FieldByName("GORMTag")) {
+			continue
+		}
+		name, ok := readStringField(fieldValue, "Name")
+		if !ok || name == "" {
+			continue
+		}
+		if firstPrimaryKeyField == "" {
+			firstPrimaryKeyField = name
+		}
+		fieldType, ok := readStringField(fieldValue, "Type")
+		if ok && fieldType == "int64" {
+			return name
+		}
+	}
+	if firstPrimaryKeyField != "" {
+		return firstPrimaryKeyField
+	}
+	return "ID"
+}
+
+// hasPrimaryKeyTag 判断字段是否携带 primaryKey gorm tag。
+func hasPrimaryKeyTag(value reflect.Value) bool {
+	if !value.IsValid() || value.Kind() != reflect.Map {
+		return false
+	}
+	tagValue := value.MapIndex(reflect.ValueOf(genField.TagKeyGormPrimaryKey))
+	return tagValue.IsValid()
+}
+
+// countPrimaryKeyFields 统计主键字段数量，用于识别联合主键场景。
+func countPrimaryKeyFields(value reflect.Value) int {
+	fieldsValue := value.FieldByName("Fields")
+	if !fieldsValue.IsValid() || fieldsValue.Kind() != reflect.Slice {
+		return 0
+	}
+	count := 0
+	for i := 0; i < fieldsValue.Len(); i++ {
+		fieldValue := fieldsValue.Index(i)
+		if fieldValue.Kind() == reflect.Ptr {
+			if fieldValue.IsNil() {
+				continue
+			}
+			fieldValue = fieldValue.Elem()
+		}
+		if fieldValue.Kind() != reflect.Struct {
+			continue
+		}
+		if hasPrimaryKeyTag(fieldValue.FieldByName("GORMTag")) {
+			count++
+		}
+	}
+	return count
 }
 
 // generateDataLayer 生成 data 包中的基础仓储、迁移注册与 ProviderSet。

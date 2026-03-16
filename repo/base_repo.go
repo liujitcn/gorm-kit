@@ -20,9 +20,9 @@ type BaseRepo[T any] interface {
 	UpdateByID(ctx context.Context, entity *T) error
 	Find(ctx context.Context, opts ...QueryOption) (*T, error)
 	FindByID(ctx context.Context, id int64) (*T, error)
-	FindByIDs(ctx context.Context, ids []int64) ([]*T, error)
-	FindAll(ctx context.Context, opts ...QueryOption) ([]*T, error)
-	ListPage(ctx context.Context, page, size int64, opts ...QueryOption) ([]*T, int64, error)
+	List(ctx context.Context, opts ...QueryOption) ([]*T, error)
+	ListByIDs(ctx context.Context, ids []int64) ([]*T, error)
+	Page(ctx context.Context, page, size int64, opts ...QueryOption) ([]*T, int64, error)
 	Count(ctx context.Context, opts ...QueryOption) (int64, error)
 }
 
@@ -138,7 +138,7 @@ func (b baseRepo[T]) UpdateByID(ctx context.Context, entity *T) error {
 	return b.queryDAO(ctx).Save(entity)
 }
 
-// Find 查询单条记录。
+// Find 根据条件查询单条记录。
 func (b baseRepo[T]) Find(ctx context.Context, opts ...QueryOption) (*T, error) {
 	if err := validateRequiredQueryOptions(opts...); err != nil {
 		return nil, err
@@ -155,6 +155,7 @@ func (b baseRepo[T]) Find(ctx context.Context, opts ...QueryOption) (*T, error) 
 	return item, nil
 }
 
+// FindByID 根据ID查询单条记录。
 func (b baseRepo[T]) FindByID(ctx context.Context, id int64) (*T, error) {
 	if id == 0 {
 		return nil, errors.New("id is required")
@@ -170,7 +171,22 @@ func (b baseRepo[T]) FindByID(ctx context.Context, id int64) (*T, error) {
 	return item, nil
 }
 
-func (b baseRepo[T]) FindByIDs(ctx context.Context, ids []int64) ([]*T, error) {
+// List 查询列表。
+func (b baseRepo[T]) List(ctx context.Context, opts ...QueryOption) ([]*T, error) {
+	dao := ApplyQueryOptions(b.queryDAO(ctx), opts...)
+	result, err := dao.Find()
+	if err != nil {
+		return nil, err
+	}
+	list, ok := result.([]*T)
+	if !ok {
+		return nil, fmt.Errorf("unexpected find type %T", result)
+	}
+	return list, nil
+}
+
+// ListByIDs 根据ID列表查询列表
+func (b baseRepo[T]) ListByIDs(ctx context.Context, ids []int64) ([]*T, error) {
 	if len(ids) == 0 {
 		return nil, errors.New("ids is required")
 	}
@@ -185,22 +201,8 @@ func (b baseRepo[T]) FindByIDs(ctx context.Context, ids []int64) ([]*T, error) {
 	return list, nil
 }
 
-// FindAll 查询全部记录。
-func (b baseRepo[T]) FindAll(ctx context.Context, opts ...QueryOption) ([]*T, error) {
-	dao := ApplyQueryOptions(b.queryDAO(ctx), opts...)
-	result, err := dao.Find()
-	if err != nil {
-		return nil, err
-	}
-	list, ok := result.([]*T)
-	if !ok {
-		return nil, fmt.Errorf("unexpected find type %T", result)
-	}
-	return list, nil
-}
-
-// ListPage 按分页条件查询记录列表。
-func (b baseRepo[T]) ListPage(ctx context.Context, page, size int64, opts ...QueryOption) ([]*T, int64, error) {
+// Page 查询分页列表。
+func (b baseRepo[T]) Page(ctx context.Context, page, size int64, opts ...QueryOption) ([]*T, int64, error) {
 	dao := ApplyQueryOptions(b.queryDAO(ctx), opts...)
 	offset, limit := PageOffsetLimit(page, size)
 
@@ -220,7 +222,7 @@ func (b baseRepo[T]) ListPage(ctx context.Context, page, size int64, opts ...Que
 	return list, count, nil
 }
 
-// Count 统计记录数。
+// Count 查询条数
 func (b baseRepo[T]) Count(ctx context.Context, opts ...QueryOption) (int64, error) {
 	dao := ApplyQueryOptions(b.queryDAO(ctx), opts...)
 	return dao.Count()

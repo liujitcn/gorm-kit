@@ -16,7 +16,7 @@ driver: mysql
 source: root:112233@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=True&loc=Local&timeout=1000ms
 out_path: query
 model_pkg_path: models
-data_path: ../../shop-gorm-gen/data
+data_path: data
 acronyms:
   api: API
   sku: SKU
@@ -68,4 +68,4 @@ go run . -set acronyms.api=API -set acronyms.sku=SKU
 - `source` 默认使用内置 DSN
 - `out_path` 默认 `query`
 - `model_pkg_path` 默认 `models`
-- `data_path` 默认 `../../shop-gorm-gen/data`
+- `data_path` 默认 `data`

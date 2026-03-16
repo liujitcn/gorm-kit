@@ -1,8 +1,8 @@
 driver: mysql
 source: root:112233@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=True&loc=Local&timeout=1000ms
-out_path: query1/tet
-model_pkg_path: models1/tst
-data_path: data1
+out_path: query
+model_pkg_path: models
+data_path: data
 acronyms:
   api: API
   id: ID

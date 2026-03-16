@@ -43,8 +43,8 @@ func WithSource(source string) Option {
 	}
 }
 
-// WithOutputPath 设置 query 输出目录。
-func WithOutputPath(path string) Option {
+// WithOutPath 设置 query 输出目录。
+func WithOutPath(path string) Option {
 	return func(o *options) {
 		// 仅在非空时覆盖，避免误清空默认值。
 		if strings.TrimSpace(path) != "" {
@@ -53,8 +53,8 @@ func WithOutputPath(path string) Option {
 	}
 }
 
-// WithModelPackagePath 设置 model 包路径。
-func WithModelPackagePath(path string) Option {
+// WithModelPkgPath 设置 model 包路径。
+func WithModelPkgPath(path string) Option {
 	return func(o *options) {
 		// 仅在非空时覆盖，避免误清空默认值。
 		if strings.TrimSpace(path) != "" {
@@ -96,16 +96,6 @@ func WithAcronyms(m map[string]string) Option {
 			o.acronyms[k] = v
 		}
 	}
-}
-
-// WithOutPath 兼容旧命名，内部转发到 WithOutputPath。
-func WithOutPath(path string) Option {
-	return WithOutputPath(path)
-}
-
-// WithModelPkgPath 兼容旧命名，内部转发到 WithModelPackagePath。
-func WithModelPkgPath(path string) Option {
-	return WithModelPackagePath(path)
 }
 
 // defaultOptions 提供最小可运行配置。

@@ -19,6 +19,8 @@ type BaseRepo[T any] interface {
 	Update(ctx context.Context, entity *T, opts ...QueryOption) error
 	UpdateByID(ctx context.Context, entity *T) error
 	Find(ctx context.Context, opts ...QueryOption) (*T, error)
+	FindByID(ctx context.Context, id int64) (*T, error)
+	FindByIDs(ctx context.Context, ids []int64) ([]*T, error)
 	FindAll(ctx context.Context, opts ...QueryOption) ([]*T, error)
 	ListPage(ctx context.Context, page, size int64, opts ...QueryOption) ([]*T, int64, error)
 	Count(ctx context.Context, opts ...QueryOption) (int64, error)
@@ -139,7 +141,6 @@ func (b baseRepo[T]) UpdateByID(ctx context.Context, entity *T) error {
 // Find 查询单条记录。
 func (b baseRepo[T]) Find(ctx context.Context, opts ...QueryOption) (*T, error) {
 	dao := ApplyQueryOptions(b.queryDAO(ctx), opts...)
-	var result interface{}
 	result, err := dao.First()
 	if err != nil {
 		return nil, err
@@ -151,10 +152,39 @@ func (b baseRepo[T]) Find(ctx context.Context, opts ...QueryOption) (*T, error) 
 	return item, nil
 }
 
+func (b baseRepo[T]) FindByID(ctx context.Context, id int64) (*T, error) {
+	if id == 0 {
+		return nil, errors.New("id is required")
+	}
+	result, err := b.queryDAO(ctx).Where(b.idField(ctx).Eq(id)).First()
+	if err != nil {
+		return nil, err
+	}
+	item, ok := result.(*T)
+	if !ok {
+		return nil, fmt.Errorf("unexpected first type %T", result)
+	}
+	return item, nil
+}
+
+func (b baseRepo[T]) FindByIDs(ctx context.Context, ids []int64) ([]*T, error) {
+	if len(ids) == 0 {
+		return nil, errors.New("ids is required")
+	}
+	result, err := b.queryDAO(ctx).Where(b.idField(ctx).In(ids...)).Find()
+	if err != nil {
+		return nil, err
+	}
+	list, ok := result.([]*T)
+	if !ok {
+		return nil, fmt.Errorf("unexpected find type %T", result)
+	}
+	return list, nil
+}
+
 // FindAll 查询全部记录。
 func (b baseRepo[T]) FindAll(ctx context.Context, opts ...QueryOption) ([]*T, error) {
 	dao := ApplyQueryOptions(b.queryDAO(ctx), opts...)
-	var result interface{}
 	result, err := dao.Find()
 	if err != nil {
 		return nil, err
@@ -171,7 +201,6 @@ func (b baseRepo[T]) ListPage(ctx context.Context, page, size int64, opts ...Que
 	dao := ApplyQueryOptions(b.queryDAO(ctx), opts...)
 	offset, limit := PageOffsetLimit(page, size)
 
-	var result interface{}
 	result, err := dao.Offset(int(offset)).Limit(int(limit)).Find()
 	if err != nil {
 		return nil, 0, err

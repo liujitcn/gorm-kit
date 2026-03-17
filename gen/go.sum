@@ -36,6 +36,7 @@ github.com/liujitcn/kratos-kit/database/gorm/driver v0.0.7 h1:v3xLKphWkKBaiH3qlO
 github.com/liujitcn/kratos-kit/database/gorm/driver v0.0.7/go.mod h1:G4im2NEUggOLq3CAX5otJi0LaqxedbXbhazUuaIExvM=
 github.com/liujitcn/kratos-kit/database/gorm/driver/mysql v0.0.3 h1:L42LB/1ITtnM1vTb8pvc9HcjRsvxZ6wI5XqhClnytpE=
 github.com/liujitcn/kratos-kit/database/gorm/driver/mysql v0.0.3/go.mod h1:As0jPaZ5k7vsuWAtPUcwqT3hXV7WrEM5DN4poH5ryQU=
+github.com/liujitcn/kratos-kit/database/gorm/driver/mysql v0.0.4/go.mod h1:GYVtmblXDMzyxTexNuLDYMWT0O5N+tQNV6LQ3iwP0Vo=
 github.com/mattn/go-sqlite3 v1.14.8/go.mod h1:NyWgC/yNuGj7Q9rpYnZvas74GogHl5/Z4A/KQRfk6bU=
 github.com/mattn/go-sqlite3 v1.14.22 h1:2gZY6PC6kBnID23Tichd1K+Z0oS6nE/XwU+Vz/5o4kU=
 github.com/mattn/go-sqlite3 v1.14.22/go.mod h1:Uh1q+B4BYcTPb+yiD3kU8Ct7aC0hY9fxUwlHK0RXw+Y=

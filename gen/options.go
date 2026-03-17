@@ -6,32 +6,10 @@ import (
 
 const (
 	// 默认连接与输出参数，供 NewGen 未传 Option 时兜底使用。
-	defaultSource       = "root:112233@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=True&loc=Local&timeout=1000ms"
-	defaultDriver       = "mysql"
 	defaultOutPath      = "query"
 	defaultModelPkgPath = "models"
 	defaultDataPath     = "data"
 )
-
-// defaultAcronyms 定义模型命名与 data 代码生成共用的默认缩写表。
-var defaultAcronyms = map[string]string{
-	"api":   "API",
-	"id":    "ID",
-	"ip":    "IP",
-	"url":   "URL",
-	"uri":   "URI",
-	"http":  "HTTP",
-	"https": "HTTPS",
-	"tcp":   "TCP",
-	"udp":   "UDP",
-	"rpc":   "RPC",
-	"sql":   "SQL",
-	"db":    "DB",
-	"uid":   "UID",
-	"uuid":  "UUID",
-	"sku":   "SKU",
-	"sn":    "SN",
-}
 
 type Option func(o *options)
 
@@ -133,21 +111,8 @@ func WithAcronyms(m map[string]string) Option {
 // defaultOptions 提供最小可运行配置。
 func defaultOptions() options {
 	return options{
-		driver:       defaultDriver,
-		source:       defaultSource,
 		outPath:      defaultOutPath,
 		modelPkgPath: defaultModelPkgPath,
 		dataPath:     defaultDataPath,
-		// 初始化时复制默认缩写，避免运行期改动污染共享默认值。
-		acronyms: cloneAcronyms(defaultAcronyms),
 	}
-}
-
-// cloneAcronyms 复制缩写映射，确保调用方拿到独立副本。
-func cloneAcronyms(src map[string]string) map[string]string {
-	dst := make(map[string]string, len(src))
-	for key, value := range src {
-		dst[key] = value
-	}
-	return dst
 }

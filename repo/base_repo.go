@@ -77,7 +77,7 @@ func (b baseRepo[T]) Delete(ctx context.Context, opts ...QueryOption) error {
 	return res.Error
 }
 
-// DeleteByID 按主键删除单条记录。
+// DeleteById 按主键删除单条记录。
 func (b baseRepo[T]) DeleteById(ctx context.Context, id int64) error {
 	if id == 0 {
 		return nil
@@ -93,7 +93,7 @@ func (b baseRepo[T]) DeleteById(ctx context.Context, id int64) error {
 	return res.Error
 }
 
-// DeleteByIDs 按主键批量删除记录。
+// DeleteByIds 按主键批量删除记录。
 func (b baseRepo[T]) DeleteByIds(ctx context.Context, ids []int64) error {
 	if len(ids) == 0 {
 		return nil
@@ -123,10 +123,14 @@ func (b baseRepo[T]) Update(ctx context.Context, entity *T, opts ...QueryOption)
 	if err != nil {
 		return err
 	}
+	// 更新语句执行成功但未命中记录时，仅记录告警，不视为错误。
+	if res.RowsAffected == 0 {
+		return nil
+	}
 	return res.Error
 }
 
-// UpdateByID 按主键更新记录。
+// UpdateById 按主键更新记录。
 func (b baseRepo[T]) UpdateById(ctx context.Context, entity *T) error {
 	if entity == nil {
 		return errors.New("entity is nil")
@@ -135,7 +139,15 @@ func (b baseRepo[T]) UpdateById(ctx context.Context, entity *T) error {
 	if id == 0 {
 		return errors.New("entity id is required")
 	}
-	return b.queryDAO(ctx).Save(entity)
+	res, err := b.queryDAO(ctx).Updates(entity)
+	if err != nil {
+		return err
+	}
+	// 更新语句执行成功但未命中记录时，仅记录告警，不视为错误。
+	if res.RowsAffected == 0 {
+		return nil
+	}
+	return res.Error
 }
 
 // Find 根据条件查询单条记录。
@@ -155,7 +167,7 @@ func (b baseRepo[T]) Find(ctx context.Context, opts ...QueryOption) (*T, error) 
 	return item, nil
 }
 
-// FindByID 根据ID查询单条记录。
+// FindById 根据ID查询单条记录。
 func (b baseRepo[T]) FindById(ctx context.Context, id int64) (*T, error) {
 	if id == 0 {
 		return nil, errors.New("id is required")
@@ -185,10 +197,10 @@ func (b baseRepo[T]) List(ctx context.Context, opts ...QueryOption) ([]*T, error
 	return list, nil
 }
 
-// ListByIDs 根据ID列表查询列表
+// ListByIds 根据ID列表查询列表
 func (b baseRepo[T]) ListByIds(ctx context.Context, ids []int64) ([]*T, error) {
 	if len(ids) == 0 {
-		return nil, errors.New("ids is required")
+		return []*T{}, nil
 	}
 	result, err := b.queryDAO(ctx).Where(b.idField(ctx).In(ids...)).Find()
 	if err != nil {

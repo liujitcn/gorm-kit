@@ -10,10 +10,6 @@ func buildModelName(tableName string) string {
 	parts := strings.Split(tableName, "_")
 	for i, part := range parts {
 		lowerPart := strings.ToLower(part)
-		if acronym, ok := defaultAcronyms[lowerPart]; ok {
-			parts[i] = acronym
-			continue
-		}
 		parts[i] = upperFirst(lowerPart)
 	}
 	return strings.Join(parts, "")

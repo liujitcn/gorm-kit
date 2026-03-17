@@ -14,14 +14,14 @@ type BaseRepo[T any] interface {
 	Create(ctx context.Context, entity *T) error
 	BatchCreate(ctx context.Context, list []*T) error
 	Delete(ctx context.Context, opts ...QueryOption) error
-	DeleteByID(ctx context.Context, id int64) error
-	DeleteByIDs(ctx context.Context, ids []int64) error
+	DeleteById(ctx context.Context, id int64) error
+	DeleteByIds(ctx context.Context, ids []int64) error
 	Update(ctx context.Context, entity *T, opts ...QueryOption) error
-	UpdateByID(ctx context.Context, entity *T) error
+	UpdateById(ctx context.Context, entity *T) error
 	Find(ctx context.Context, opts ...QueryOption) (*T, error)
-	FindByID(ctx context.Context, id int64) (*T, error)
+	FindById(ctx context.Context, id int64) (*T, error)
 	List(ctx context.Context, opts ...QueryOption) ([]*T, error)
-	ListByIDs(ctx context.Context, ids []int64) ([]*T, error)
+	ListByIds(ctx context.Context, ids []int64) ([]*T, error)
 	Page(ctx context.Context, page, size int64, opts ...QueryOption) ([]*T, int64, error)
 	Count(ctx context.Context, opts ...QueryOption) (int64, error)
 }
@@ -78,7 +78,7 @@ func (b baseRepo[T]) Delete(ctx context.Context, opts ...QueryOption) error {
 }
 
 // DeleteByID 按主键删除单条记录。
-func (b baseRepo[T]) DeleteByID(ctx context.Context, id int64) error {
+func (b baseRepo[T]) DeleteById(ctx context.Context, id int64) error {
 	if id == 0 {
 		return nil
 	}
@@ -94,7 +94,7 @@ func (b baseRepo[T]) DeleteByID(ctx context.Context, id int64) error {
 }
 
 // DeleteByIDs 按主键批量删除记录。
-func (b baseRepo[T]) DeleteByIDs(ctx context.Context, ids []int64) error {
+func (b baseRepo[T]) DeleteByIds(ctx context.Context, ids []int64) error {
 	if len(ids) == 0 {
 		return nil
 	}
@@ -127,7 +127,7 @@ func (b baseRepo[T]) Update(ctx context.Context, entity *T, opts ...QueryOption)
 }
 
 // UpdateByID 按主键更新记录。
-func (b baseRepo[T]) UpdateByID(ctx context.Context, entity *T) error {
+func (b baseRepo[T]) UpdateById(ctx context.Context, entity *T) error {
 	if entity == nil {
 		return errors.New("entity is nil")
 	}
@@ -156,7 +156,7 @@ func (b baseRepo[T]) Find(ctx context.Context, opts ...QueryOption) (*T, error) 
 }
 
 // FindByID 根据ID查询单条记录。
-func (b baseRepo[T]) FindByID(ctx context.Context, id int64) (*T, error) {
+func (b baseRepo[T]) FindById(ctx context.Context, id int64) (*T, error) {
 	if id == 0 {
 		return nil, errors.New("id is required")
 	}
@@ -186,7 +186,7 @@ func (b baseRepo[T]) List(ctx context.Context, opts ...QueryOption) ([]*T, error
 }
 
 // ListByIDs 根据ID列表查询列表
-func (b baseRepo[T]) ListByIDs(ctx context.Context, ids []int64) ([]*T, error) {
+func (b baseRepo[T]) ListByIds(ctx context.Context, ids []int64) ([]*T, error) {
 	if len(ids) == 0 {
 		return nil, errors.New("ids is required")
 	}

@@ -139,7 +139,7 @@ func (b baseRepo[T]) UpdateById(ctx context.Context, entity *T) error {
 	if id == 0 {
 		return errors.New("entity id is required")
 	}
-	res, err := b.queryDAO(ctx).Updates(entity)
+	res, err := b.queryDAO(ctx).Where(b.idField(ctx).Eq(id)).Updates(entity)
 	if err != nil {
 		return err
 	}

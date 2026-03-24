@@ -76,23 +76,17 @@ func (g *Gen) newGenerator() (*gormgen.Generator, error) {
 		WithUnitTest:      false,
 	})
 	generator.UseDB(db)
-	// 直接使用 options 内的缩写映射（默认值已在 defaultOptions 中初始化）。
+	// 使用固定的下划线转驼峰策略生成模型名。
 	generator.WithModelNameStrategy(g.buildTableToModelNameStrategy())
 	return generator, nil
 }
 
 // buildTableToModelNameStrategy 构建“表名 -> 模型名”转换策略。
 func (g *Gen) buildTableToModelNameStrategy() func(tableName string) string {
-	acronyms := g.opts.acronyms
 	return func(tableName string) string {
 		parts := strings.Split(tableName, "_")
 		for i, part := range parts {
-			lowerPart := strings.ToLower(part)
-			if acronym, ok := acronyms[lowerPart]; ok {
-				parts[i] = acronym
-				continue
-			}
-			parts[i] = upperFirst(lowerPart)
+			parts[i] = upperFirst(strings.ToLower(part))
 		}
 		return strings.Join(parts, "")
 	}

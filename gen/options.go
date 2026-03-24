@@ -1,11 +1,13 @@
 package main
 
 import (
+	"path/filepath"
 	"strings"
 )
 
 const (
 	// 默认连接与输出参数，供 NewGen 未传 Option 时兜底使用。
+	defaultDriver       = "mysql"
 	defaultOutPath      = "query"
 	defaultModelPkgPath = "models"
 	defaultDataPath     = "data"
@@ -17,10 +19,10 @@ type Option func(o *options)
 type options struct {
 	driver       string
 	source       string
+	basePath     string
 	outPath      string
 	modelPkgPath string
 	dataPath     string
-	acronyms     map[string]string
 }
 
 // WithDriver 设置数据库驱动。
@@ -39,6 +41,16 @@ func WithSource(source string) Option {
 		// 仅在非空时覆盖，避免误清空默认值。
 		if strings.TrimSpace(source) != "" {
 			o.source = source
+		}
+	}
+}
+
+// WithBasePath 设置统一基础路径，用于批量拼接 models、query、data 输出目录。
+func WithBasePath(path string) Option {
+	return func(o *options) {
+		trimmedPath := strings.TrimSpace(path)
+		if trimmedPath != "" {
+			o.basePath = trimmedPath
 		}
 	}
 }
@@ -73,44 +85,21 @@ func WithDataPath(path string) Option {
 	}
 }
 
-// WithAcronym 追加单个缩写映射（key 不区分大小写）。
-func WithAcronym(key, value string) Option {
-	return func(o *options) {
-		k := strings.ToLower(strings.TrimSpace(key))
-		v := strings.TrimSpace(value)
-		if k == "" || v == "" {
-			return
-		}
-		if o.acronyms == nil {
-			o.acronyms = make(map[string]string)
-		}
-		o.acronyms[k] = v
+// ApplyBasePath 将基础路径应用到默认输出目录，减少重复配置。
+func (o *options) ApplyBasePath() {
+	if strings.TrimSpace(o.basePath) == "" {
+		return
 	}
-}
-
-// WithAcronyms 批量追加缩写映射（key 不区分大小写）。
-func WithAcronyms(m map[string]string) Option {
-	return func(o *options) {
-		if len(m) == 0 {
-			return
-		}
-		if o.acronyms == nil {
-			o.acronyms = make(map[string]string, len(m))
-		}
-		for key, value := range m {
-			k := strings.ToLower(strings.TrimSpace(key))
-			v := strings.TrimSpace(value)
-			if k == "" || v == "" {
-				continue
-			}
-			o.acronyms[k] = v
-		}
-	}
+	// 统一以基础路径作为前缀，未单独覆盖时自动生成 base/models、base/query、base/data。
+	o.outPath = filepath.Join(o.basePath, o.outPath)
+	o.modelPkgPath = filepath.Join(o.basePath, o.modelPkgPath)
+	o.dataPath = filepath.Join(o.basePath, o.dataPath)
 }
 
 // defaultOptions 提供最小可运行配置。
 func defaultOptions() options {
 	return options{
+		driver:       defaultDriver,
 		outPath:      defaultOutPath,
 		modelPkgPath: defaultModelPkgPath,
 		dataPath:     defaultDataPath,

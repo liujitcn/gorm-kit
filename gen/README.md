@@ -2,62 +2,43 @@
 
 当前目录提供基于 `gorm/gen` 的代码生成入口，支持：
 
-- 通过 `config.yaml` 加载生成配置
-- 通过命令行参数覆盖配置文件中的单项字段
+- 通过与 `options` 一致的命令行参数覆盖默认配置
 - 生成 `models`、`query` 与 `data`
 - 每次生成 `data` 前自动清空目标目录，避免旧文件残留
 
-## 配置示例
-
-配置字段与 `options` 保持一致：
-
-```yaml
-driver: mysql
-source: root:112233@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=True&loc=Local&timeout=1000ms
-out_path: query
-model_pkg_path: models
-data_path: data
-acronyms:
-  api: API
-  sku: SKU
-```
-
 ## 使用方式
 
-默认读取当前目录下的 `config.yaml`：
+查看帮助：
 
 ```bash
-go run .
+go run . -h
 ```
 
-指定配置文件路径：
+使用命令行参数启动生成：
 
 ```bash
-go run . -config ./config.yaml
+go run . -source='root:123456@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=True&loc=Local&timeout=1000ms'
+go run . -source='root:123456@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=True&loc=Local&timeout=1000ms' -base_path=test
+go run . -out_path=query1/tet -model_pkg_path=models1/tst -data_path=./data1
+go run . -source='root:123456@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=True&loc=Local&timeout=1000ms' -base_path=.server/pkg -out_path=query1/tet -model_pkg_path=models1/tst -data_path=./data1
 ```
 
-使用命令行覆盖配置文件中的单项字段：
+## 启动参数
 
-```bash
-go run . -config ./config.yaml -set model_pkg_path=models1/tst -set out_path=query1/tet -set data_path=./data1
-go run . -set source='root:123456@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=True&loc=Local&timeout=1000ms'
-go run . -set acronyms.api=API -set acronyms.sku=SKU
-```
+当前支持以下命令行参数：
 
-## 覆盖项
-
-当前支持以下 `-set key=value` 覆盖项：
-
-- `driver`
-- `source`
-- `out_path`
-- `model_pkg_path`
-- `data_path`
-- `acronyms.xxx`
+- `driver`：数据库驱动，默认 `mysql`
+- `source`：数据库连接串，必填
+- `base_path`：统一基础路径，例如传 `test` 后会生成到 `test/query`、`test/models`、`test/data`
+- `out_path`：`query` 输出目录，默认 `query`
+- `model_pkg_path`：`model` 包路径，默认 `models`
+- `data_path`：`data` 输出目录，默认 `data`
 
 ## 生成规则
 
 - `model_pkg_path`、`out_path`、`data_path` 会同时影响对应目录的生成结果
+- `base_path` 会统一为最终的 `model_pkg_path`、`out_path`、`data_path` 增加前缀
+- 例如 `-base_path=.server/pkg -data_path=./data1` 最终会生成到 `.server/pkg/data1`
 - `data` 中引用的 `models`、`query` 会跟随实际导入路径与目标包名变化
 - `data` 包名取 `data_path` 最后一层目录名
 - `data` 中每个 Repo 默认生成导出结构体，并内嵌通用 `BaseRepo` 与 `*Data`
@@ -67,7 +48,8 @@ go run . -set acronyms.api=API -set acronyms.sku=SKU
 ## 默认值
 
 - `driver` 默认 `mysql`
-- `source` 默认使用内置 DSN
+- `source` 无默认值，必须显式传入
+- `base_path` 默认空
 - `out_path` 默认 `query`
 - `model_pkg_path` 默认 `models`
 - `data_path` 默认 `data`

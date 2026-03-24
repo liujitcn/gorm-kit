@@ -85,7 +85,7 @@ const repoFileTemplate = `package {{ .PackageName }}
 import (
 	"context"
 
-	baseRepo "github.com/liujitcn/gorm-kit/repo"
+	"github.com/liujitcn/gorm-kit/repo"
 	"{{ .ModelImportPath }}"
 	"gorm.io/gen"
 	"gorm.io/gen/field"
@@ -93,13 +93,13 @@ import (
 
 // {{ .Table.RepoName }}Repo 定义 {{ .Table.ModelName }} 的基础仓储能力。
 type {{ .Table.RepoName }}Repo struct {
-	baseRepo.BaseRepo[{{ .ModelPackage }}.{{ .Table.ModelName }}]
+	repo.BaseRepo[{{ .ModelPackage }}.{{ .Table.ModelName }}]
 	*Data
 }
 
 // New{{ .Table.RepoName }}Repo 创建 {{ .Table.ModelName }} 基础仓储实例。
 func New{{ .Table.RepoName }}Repo(data *Data) *{{ .Table.RepoName }}Repo {
-	base := baseRepo.NewBaseRepo[{{ .ModelPackage }}.{{ .Table.ModelName }}](
+	base := repo.NewBaseRepo[{{ .ModelPackage }}.{{ .Table.ModelName }}](
 		func(ctx context.Context) gen.Dao {
 			return new(data.Query(ctx).{{ .Table.ModelName }}.WithContext(ctx).DO)
 		},

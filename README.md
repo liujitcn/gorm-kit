@@ -53,9 +53,9 @@ userRepo := repo.NewBaseRepo(
 
 `gen` 当前支持：
 
-- 默认读取 `gen/config.yaml`
-- 使用 `-config` 指定配置文件路径
-- 使用 `-set key=value` 覆盖配置文件中的单项字段
+- 使用显式命令行参数传入配置
+- `source` 为必填项，可通过 `-h` 查看帮助
+- 支持 `base_path` 统一追加 `models`、`query`、`data` 输出前缀
 - 联动生成 `models`、`query`、`data`
 - 每次生成 `data` 前自动删除目标目录，避免旧文件残留
 
@@ -63,19 +63,19 @@ userRepo := repo.NewBaseRepo(
 
 ```bash
 cd gen
-go run .
-go run . -config ./config.yaml
-go run . -config ./config.yaml -set model_pkg_path=models1/tst -set out_path=query1/tet -set data_path=./data1
+go run . -h
+go run . -source='root:123456@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=True&loc=Local&timeout=1000ms'
+go run . -source='root:123456@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=True&loc=Local&timeout=1000ms' -base_path=.server/pkg -out_path=query1/tet -model_pkg_path=models1/tst -data_path=./data1
 ```
 
-当前支持覆盖的配置项：
+当前支持的参数：
 
 - `driver`
 - `source`
+- `base_path`
 - `out_path`
 - `model_pkg_path`
 - `data_path`
-- `acronyms.xxx`
 
 更完整说明见：
 

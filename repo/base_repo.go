@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"gorm.io/gen"
 	"gorm.io/gen/field"
+	"gorm.io/gorm"
 )
 
 // BaseRepo 定义通用仓储能力。
@@ -158,7 +160,7 @@ func (b baseRepo[T]) Find(ctx context.Context, opts ...QueryOption) (*T, error) 
 	dao := ApplyQueryOptions(b.queryDAO(ctx), opts...)
 	result, err := dao.First()
 	if err != nil {
-		return nil, err
+		return nil, normalizeNotFoundError(err)
 	}
 	item, ok := result.(*T)
 	if !ok {
@@ -174,7 +176,7 @@ func (b baseRepo[T]) FindById(ctx context.Context, id int64) (*T, error) {
 	}
 	result, err := b.queryDAO(ctx).Where(b.idField(ctx).Eq(id)).First()
 	if err != nil {
-		return nil, err
+		return nil, normalizeNotFoundError(err)
 	}
 	item, ok := result.(*T)
 	if !ok {
@@ -264,4 +266,18 @@ func validateRequiredQueryOptions(opts ...QueryOption) error {
 		}
 	}
 	return errors.New("opts is required")
+}
+
+// normalizeNotFoundError 统一将“记录不存在”归一到 gorm.ErrRecordNotFound，兼容底层返回字符串错误的场景。
+func normalizeNotFoundError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return gorm.ErrRecordNotFound
+	}
+	if strings.EqualFold(strings.TrimSpace(err.Error()), gorm.ErrRecordNotFound.Error()) {
+		return gorm.ErrRecordNotFound
+	}
+	return err
 }

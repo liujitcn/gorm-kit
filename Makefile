@@ -1,5 +1,9 @@
 # 运行要求：Linux/macOS，或 Windows 下使用 WSL/Git Bash（需具备 make、python3、go）
-.PHONY: help tag
+.PHONY: help fmt tag
+
+# 使用 goimports 统一整理 Go 代码的 import 与格式
+fmt:
+	@goimports -w $$(rg --files -g '*.go')
 
 # 统一打 tag：默认扫描根目录及子目录的 go.mod；可通过 MODULE=auth 指定起始目录递归扫描（不提交代码）
 tag:

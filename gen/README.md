@@ -4,6 +4,7 @@
 
 - 通过与 `options` 一致的命令行参数覆盖默认配置
 - 生成 `models`、`query` 与 `data`
+- 额外生成 `models/table_comment.gen.go`，为带表注释的模型补充 `TableComment() string`
 - 每次生成 `data` 前自动清空目标目录，避免旧文件残留
 
 ## 使用方式
@@ -39,6 +40,7 @@ go run . -source='root:123456@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=Tr
 - `model_pkg_path`、`out_path`、`data_path` 会同时影响对应目录的生成结果
 - `base_path` 会统一为最终的 `model_pkg_path`、`out_path`、`data_path` 增加前缀
 - 例如 `-base_path=.server/pkg -data_path=./data1` 最终会生成到 `.server/pkg/data1`
+- `models` 目录会额外生成 `table_comment.gen.go`，用于在运行时暴露表注释，配合自动迁移恢复表注释
 - `data` 中引用的 `models`、`query` 会跟随实际导入路径与目标包名变化
 - `data` 包名取 `data_path` 最后一层目录名
 - `data` 中每个 Repo 默认生成导出结构体，并内嵌通用 `BaseRepo` 与 `*Data`

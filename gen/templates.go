@@ -122,3 +122,14 @@ func New{{ .Table.RepoName }}Repo(data *Data) *{{ .Table.RepoName }}Repo {
 	}
 }
 `
+
+const modelCommentFileTemplate = `package {{ .PackageName }}
+
+{{- range .Comments }}
+
+// TableComment 返回表注释。
+func (*{{ .ModelName }}) TableComment() string {
+	return {{ printf "%q" .TableComment }}
+}
+{{- end }}
+`

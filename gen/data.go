@@ -75,17 +75,8 @@ func loadTables(tableModels []interface{}) ([]tableMeta, error) {
 
 // extractTableMeta 从 gorm/gen 返回对象中提取 data 层所需的表信息。
 func extractTableMeta(tableModel any) (tableMeta, bool) {
-	if tableModel == nil {
-		return tableMeta{}, false
-	}
-	value := reflect.ValueOf(tableModel)
-	if value.Kind() == reflect.Ptr {
-		if value.IsNil() {
-			return tableMeta{}, false
-		}
-		value = value.Elem()
-	}
-	if value.Kind() != reflect.Struct {
+	value, ok := indirectStructValue(tableModel)
+	if !ok {
 		return tableMeta{}, false
 	}
 
@@ -105,6 +96,24 @@ func extractTableMeta(tableModel any) (tableMeta, bool) {
 		PrimaryKeyField:        extractFirstPrimaryKeyField(value),
 		HasCompositePrimaryKey: countPrimaryKeyFields(value) > 1,
 	}, true
+}
+
+// indirectStructValue 将输入解包为结构体值，兼容结构体与结构体指针。
+func indirectStructValue(v interface{}) (reflect.Value, bool) {
+	if v == nil {
+		return reflect.Value{}, false
+	}
+	value := reflect.ValueOf(v)
+	if value.Kind() == reflect.Ptr {
+		if value.IsNil() {
+			return reflect.Value{}, false
+		}
+		value = value.Elem()
+	}
+	if value.Kind() != reflect.Struct {
+		return reflect.Value{}, false
+	}
+	return value, true
 }
 
 // readStringField 读取结构体中的字符串字段。

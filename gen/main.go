@@ -44,6 +44,9 @@ func main() {
 	if err = g.Execute(); err != nil {
 		log.Fatal(err)
 	}
+	if err = generateModelCommentFile(opts, tables); err != nil {
+		log.Fatal(err)
+	}
 	if err = generateDataFiles(opts, tables); err != nil {
 		log.Fatal(err)
 	}

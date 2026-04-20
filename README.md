@@ -57,7 +57,7 @@ userRepo := repo.NewBaseRepo(
 - `source` 为必填项，可通过 `-h` 查看帮助
 - 支持 `base_path` 统一追加 `models`、`query`、`data` 输出前缀
 - 联动生成 `models`、`query`、`data`
-- 每次生成 `data` 前自动删除目标目录，避免旧文件残留
+- 每次生成前自动删除 `models`、`query`、`data` 目标目录，避免旧表旧文件残留
 
 示例：
 

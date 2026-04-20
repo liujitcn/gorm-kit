@@ -37,11 +37,8 @@ func main() {
 	}
 
 	g := &Gen{opts: opts}
-	tables, err := g.GenerateAllTable()
+	tables, err := g.Generate()
 	if err != nil {
-		log.Fatal(err)
-	}
-	if err = g.Execute(); err != nil {
 		log.Fatal(err)
 	}
 	if err = generateModelCommentFile(opts, tables); err != nil {

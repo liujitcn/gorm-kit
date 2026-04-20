@@ -29,15 +29,27 @@ func NewGen(opts ...Option) *Gen {
 
 // Execute 执行代码生成。
 func (g *Gen) Execute() error {
+	_, err := g.Generate()
+	return err
+}
+
+// Generate 执行代码生成并返回当前数据库的全部表结果。
+func (g *Gen) Generate() ([]interface{}, error) {
 	generator, err := g.newGenerator()
 	if err != nil {
-		return err
+		return nil, err
+	}
+
+	tableModels := generator.GenerateAllTable()
+	// 只有成功读取到当前库表结构后才清理旧目录，避免连接异常时误删上次生成结果。
+	if err = g.cleanupGeneratedDirs(); err != nil {
+		return nil, err
 	}
 
 	// 4. 基于当前库全部表生成模型与查询代码。
-	generator.ApplyBasic(generator.GenerateAllTable()...)
+	generator.ApplyBasic(tableModels...)
 	generator.Execute()
-	return nil
+	return tableModels, nil
 }
 
 // GenerateAllTable 导出当前配置下数据库全部表的生成结果。

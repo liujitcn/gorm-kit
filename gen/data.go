@@ -43,6 +43,10 @@ func generateDataFiles(opts options, tableModels []interface{}) error {
 	if err != nil {
 		return err
 	}
+	// data 仍在真正写入前清理，避免 query/model 生成失败时过早删除上一次结果。
+	if err = cleanupTargets(cleanupTarget{label: "data", path: dataDir}); err != nil {
+		return err
+	}
 	tables, err := loadTables(tableModels)
 	if err != nil {
 		return err
@@ -201,10 +205,6 @@ func countPrimaryKeyFields(value reflect.Value) int {
 
 // generateDataLayer 生成 data 包中的基础仓储、迁移注册与 ProviderSet。
 func generateDataLayer(dataDir string, ctx dataTemplateContext) error {
-	// 每次生成前先清理旧目录，避免历史文件残留导致无效代码继续存在。
-	if err := os.RemoveAll(dataDir); err != nil {
-		return err
-	}
 	if err := os.MkdirAll(dataDir, 0o755); err != nil {
 		return err
 	}

@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/go-kratos/kratos/v2 v2.9.2
-	github.com/liujitcn/go-utils v0.0.25
+	github.com/liujitcn/go-utils v0.0.26
 	github.com/liujitcn/kratos-kit/database/gorm/driver v0.0.7
 	github.com/liujitcn/kratos-kit/database/gorm/driver/mysql v0.0.5
 	gorm.io/gen v0.3.27

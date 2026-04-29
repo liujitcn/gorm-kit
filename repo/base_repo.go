@@ -244,15 +244,23 @@ func (b baseRepo[T]) Count(ctx context.Context, opts ...QueryOption) (int64, err
 
 // PageOffsetLimit 统一处理分页参数，兜底 page=1、size=10。
 func PageOffsetLimit(page, size int64) (offset, limit int64) {
-	if page <= 0 {
-		page = 1
-	}
-	if size <= 0 {
-		size = 10
-	}
+	page, size = PageDefault(page, size)
 	offset = (page - 1) * size
 	limit = size
 	return
+}
+
+// PageDefault 统一处理分页默认值，兜底 page=1、size=10。
+func PageDefault(page, size int64) (int64, int64) {
+	if page <= 0 {
+		// 页码非法时统一回退到第一页，避免计算出负偏移量。
+		page = 1
+	}
+	if size <= 0 {
+		// 每页数量非法时统一回退到默认数量，保证分页查询稳定。
+		size = 10
+	}
+	return page, size
 }
 
 // validateRequiredQueryOptions 校验必须存在至少一个有效查询选项。

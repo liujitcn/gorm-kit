@@ -49,6 +49,11 @@ userRepo := repo.NewBaseRepo(
 - `Scope`、`Scopes`
 - `Unscoped`
 
+分页辅助方法：
+
+- `PageDefault`：统一补齐分页默认值，默认 `page=1`、`size=10`
+- `PageOffsetLimit`：基于补齐后的分页参数计算 `offset` 与 `limit`
+
 ## gen
 
 `gen` 当前支持：

@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
-	"unicode"
 
 	"github.com/liujitcn/kratos-kit/database/gorm/driver"
 	gormgen "gorm.io/gen"
@@ -40,7 +38,7 @@ func (g *Gen) Generate() ([]interface{}, error) {
 		return nil, err
 	}
 
-	tableModels := generator.GenerateAllTable()
+	tableModels := g.generateAllTable(generator)
 	// 只有成功读取到当前库表结构后才清理旧目录，避免连接异常时误删上次生成结果。
 	if err = g.cleanupGeneratedDirs(); err != nil {
 		return nil, err
@@ -58,7 +56,7 @@ func (g *Gen) GenerateAllTable() ([]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return generator.GenerateAllTable(), nil
+	return g.generateAllTable(generator), nil
 }
 
 // newGenerator 按当前配置初始化 gorm/gen 生成器。
@@ -96,19 +94,23 @@ func (g *Gen) newGenerator() (*gormgen.Generator, error) {
 // buildTableToModelNameStrategy 构建“表名 -> 模型名”转换策略。
 func (g *Gen) buildTableToModelNameStrategy() func(tableName string) string {
 	return func(tableName string) string {
-		parts := strings.Split(tableName, "_")
-		for i, part := range parts {
-			parts[i] = upperFirst(strings.ToLower(part))
-		}
-		return strings.Join(parts, "")
+		return buildModelName(tableName)
 	}
 }
 
-func upperFirst(s string) string {
-	if s == "" {
-		return s
-	}
-	runes := []rune(s)
-	runes[0] = unicode.ToUpper(runes[0])
-	return string(runes)
+// generateAllTable 使用统一命名选项导出当前数据库全部表。
+func (g *Gen) generateAllTable(generator *gormgen.Generator) []interface{} {
+	return generator.GenerateAllTable(g.buildFieldNameStrategy())
+}
+
+// buildFieldNameStrategy 构建“字段列名 -> 模型字段名”转换策略。
+func (g *Gen) buildFieldNameStrategy() gormgen.ModelOpt {
+	return gormgen.FieldModify(func(field gormgen.Field) gormgen.Field {
+		if field == nil || field.ColumnName == "" {
+			return field
+		}
+		// 在 gorm/gen 调用 GORM SchemaName 前预先补齐扩展缩写，避免 SKU、LLM 等被降级为普通驼峰。
+		field.Name = buildModelName(field.ColumnName)
+		return field
+	})
 }

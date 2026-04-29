@@ -1,4 +1,4 @@
-package repo
+package repository
 
 import (
 	"context"
@@ -11,37 +11,37 @@ import (
 	"gorm.io/gorm"
 )
 
-// BaseRepo 定义通用仓储能力。
-type BaseRepo[T any] interface {
+// BaseRepository 定义通用仓储能力。
+type BaseRepository[T any] interface {
 	Create(ctx context.Context, entity *T) error
 	BatchCreate(ctx context.Context, list []*T) error
 	Delete(ctx context.Context, opts ...QueryOption) error
-	DeleteById(ctx context.Context, id int64) error
-	DeleteByIds(ctx context.Context, ids []int64) error
+	DeleteByID(ctx context.Context, id int64) error
+	DeleteByIDs(ctx context.Context, ids []int64) error
 	Update(ctx context.Context, entity *T, opts ...QueryOption) error
-	UpdateById(ctx context.Context, entity *T) error
+	UpdateByID(ctx context.Context, entity *T) error
 	Find(ctx context.Context, opts ...QueryOption) (*T, error)
-	FindById(ctx context.Context, id int64) (*T, error)
+	FindByID(ctx context.Context, id int64) (*T, error)
 	List(ctx context.Context, opts ...QueryOption) ([]*T, error)
-	ListByIds(ctx context.Context, ids []int64) ([]*T, error)
+	ListByIDs(ctx context.Context, ids []int64) ([]*T, error)
 	Page(ctx context.Context, page, size int64, opts ...QueryOption) ([]*T, int64, error)
 	Count(ctx context.Context, opts ...QueryOption) (int64, error)
 }
 
-// baseRepo 是基于 gorm/gen 的通用仓储实现。
-type baseRepo[T any] struct {
+// baseRepository 是基于 gorm/gen 的通用仓储实现。
+type baseRepository[T any] struct {
 	queryDAO func(ctx context.Context) gen.Dao
 	idField  func(ctx context.Context) field.Int64
 	id       func(entity *T) int64
 }
 
-// NewBaseRepo 创建通用仓储实例。
-func NewBaseRepo[T any](
+// NewBaseRepository 创建通用仓储实例。
+func NewBaseRepository[T any](
 	queryDAO func(ctx context.Context) gen.Dao,
 	idField func(ctx context.Context) field.Int64,
 	id func(entity *T) int64,
-) BaseRepo[T] {
-	return baseRepo[T]{
+) BaseRepository[T] {
+	return baseRepository[T]{
 		queryDAO: queryDAO,
 		idField:  idField,
 		id:       id,
@@ -49,7 +49,7 @@ func NewBaseRepo[T any](
 }
 
 // Create 创建单条记录。
-func (b baseRepo[T]) Create(ctx context.Context, entity *T) error {
+func (b baseRepository[T]) Create(ctx context.Context, entity *T) error {
 	if entity == nil {
 		return errors.New("entity is nil")
 	}
@@ -57,7 +57,7 @@ func (b baseRepo[T]) Create(ctx context.Context, entity *T) error {
 }
 
 // BatchCreate 批量创建记录。
-func (b baseRepo[T]) BatchCreate(ctx context.Context, list []*T) error {
+func (b baseRepository[T]) BatchCreate(ctx context.Context, list []*T) error {
 	if len(list) == 0 {
 		return nil
 	}
@@ -67,7 +67,7 @@ func (b baseRepo[T]) BatchCreate(ctx context.Context, list []*T) error {
 
 // Delete 按查询条件删除记录。
 // 为避免误删全表，必须显式传入至少一个查询选项。
-func (b baseRepo[T]) Delete(ctx context.Context, opts ...QueryOption) error {
+func (b baseRepository[T]) Delete(ctx context.Context, opts ...QueryOption) error {
 	if err := validateRequiredQueryOptions(opts...); err != nil {
 		return err
 	}
@@ -79,8 +79,8 @@ func (b baseRepo[T]) Delete(ctx context.Context, opts ...QueryOption) error {
 	return res.Error
 }
 
-// DeleteById 按主键删除单条记录。
-func (b baseRepo[T]) DeleteById(ctx context.Context, id int64) error {
+// DeleteByID 按主键删除单条记录。
+func (b baseRepository[T]) DeleteByID(ctx context.Context, id int64) error {
 	if id == 0 {
 		return nil
 	}
@@ -95,8 +95,8 @@ func (b baseRepo[T]) DeleteById(ctx context.Context, id int64) error {
 	return res.Error
 }
 
-// DeleteByIds 按主键批量删除记录。
-func (b baseRepo[T]) DeleteByIds(ctx context.Context, ids []int64) error {
+// DeleteByIDs 按主键批量删除记录。
+func (b baseRepository[T]) DeleteByIDs(ctx context.Context, ids []int64) error {
 	if len(ids) == 0 {
 		return nil
 	}
@@ -113,7 +113,7 @@ func (b baseRepo[T]) DeleteByIds(ctx context.Context, ids []int64) error {
 
 // Update 按查询条件批量更新记录。
 // 为避免误更新全表，必须显式传入至少一个查询选项。
-func (b baseRepo[T]) Update(ctx context.Context, entity *T, opts ...QueryOption) error {
+func (b baseRepository[T]) Update(ctx context.Context, entity *T, opts ...QueryOption) error {
 	if entity == nil {
 		return errors.New("entity is nil")
 	}
@@ -132,14 +132,14 @@ func (b baseRepo[T]) Update(ctx context.Context, entity *T, opts ...QueryOption)
 	return res.Error
 }
 
-// UpdateById 按主键更新记录。
-func (b baseRepo[T]) UpdateById(ctx context.Context, entity *T) error {
+// UpdateByID 按主键更新记录。
+func (b baseRepository[T]) UpdateByID(ctx context.Context, entity *T) error {
 	if entity == nil {
 		return errors.New("entity is nil")
 	}
 	id := b.id(entity)
 	if id == 0 {
-		return errors.New("entity id is required")
+		return errors.New("entity ID is required")
 	}
 	res, err := b.queryDAO(ctx).Where(b.idField(ctx).Eq(id)).Updates(entity)
 	if err != nil {
@@ -153,7 +153,7 @@ func (b baseRepo[T]) UpdateById(ctx context.Context, entity *T) error {
 }
 
 // Find 根据条件查询单条记录。
-func (b baseRepo[T]) Find(ctx context.Context, opts ...QueryOption) (*T, error) {
+func (b baseRepository[T]) Find(ctx context.Context, opts ...QueryOption) (*T, error) {
 	if err := validateRequiredQueryOptions(opts...); err != nil {
 		return nil, err
 	}
@@ -169,10 +169,10 @@ func (b baseRepo[T]) Find(ctx context.Context, opts ...QueryOption) (*T, error) 
 	return item, nil
 }
 
-// FindById 根据ID查询单条记录。
-func (b baseRepo[T]) FindById(ctx context.Context, id int64) (*T, error) {
+// FindByID 根据 ID 查询单条记录。
+func (b baseRepository[T]) FindByID(ctx context.Context, id int64) (*T, error) {
 	if id == 0 {
-		return nil, errors.New("id is required")
+		return nil, errors.New("ID is required")
 	}
 	result, err := b.queryDAO(ctx).Where(b.idField(ctx).Eq(id)).First()
 	if err != nil {
@@ -186,7 +186,7 @@ func (b baseRepo[T]) FindById(ctx context.Context, id int64) (*T, error) {
 }
 
 // List 查询列表。
-func (b baseRepo[T]) List(ctx context.Context, opts ...QueryOption) ([]*T, error) {
+func (b baseRepository[T]) List(ctx context.Context, opts ...QueryOption) ([]*T, error) {
 	dao := ApplyQueryOptions(b.queryDAO(ctx), opts...)
 	result, err := dao.Find()
 	if err != nil {
@@ -199,8 +199,8 @@ func (b baseRepo[T]) List(ctx context.Context, opts ...QueryOption) ([]*T, error
 	return list, nil
 }
 
-// ListByIds 根据ID列表查询列表
-func (b baseRepo[T]) ListByIds(ctx context.Context, ids []int64) ([]*T, error) {
+// ListByIDs 根据 ID 列表查询列表。
+func (b baseRepository[T]) ListByIDs(ctx context.Context, ids []int64) ([]*T, error) {
 	if len(ids) == 0 {
 		return []*T{}, nil
 	}
@@ -216,7 +216,7 @@ func (b baseRepo[T]) ListByIds(ctx context.Context, ids []int64) ([]*T, error) {
 }
 
 // Page 查询分页列表。
-func (b baseRepo[T]) Page(ctx context.Context, page, size int64, opts ...QueryOption) ([]*T, int64, error) {
+func (b baseRepository[T]) Page(ctx context.Context, page, size int64, opts ...QueryOption) ([]*T, int64, error) {
 	dao := ApplyQueryOptions(b.queryDAO(ctx), opts...)
 	offset, limit := PageOffsetLimit(page, size)
 
@@ -237,7 +237,7 @@ func (b baseRepo[T]) Page(ctx context.Context, page, size int64, opts ...QueryOp
 }
 
 // Count 查询条数
-func (b baseRepo[T]) Count(ctx context.Context, opts ...QueryOption) (int64, error) {
+func (b baseRepository[T]) Count(ctx context.Context, opts ...QueryOption) (int64, error) {
 	dao := ApplyQueryOptions(b.queryDAO(ctx), opts...)
 	return dao.Count()
 }

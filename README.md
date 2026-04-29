@@ -2,12 +2,12 @@
 
 `gorm-kit` 是一个基于 GORM 的通用工具仓库，当前主要包含两个模块：
 
-- `repo`：通用仓储能力与函数式查询选项
+- `repository`：通用仓储能力与函数式查询选项
 - `gen`：基于 `gorm/gen` 的代码生成入口
 
 ## 目录说明
 
-- `repo/`：仓储接口、分页、批量写入策略、函数式查询选项
+- `repository/`：仓储接口、分页、批量写入策略、函数式查询选项
 - `gen/`：生成 `models`、`query`、`data` 的代码生成器
 
 ## 测试
@@ -18,9 +18,9 @@
 go test ./...
 ```
 
-## repo
+## repository
 
-`repo` 层直接复用 `gorm/gen` 的强类型字段构建查询。`NewBaseRepo` 需要显式传入：
+`repository` 层直接复用 `gorm/gen` 的强类型字段构建查询。`NewBaseRepository` 需要显式传入：
 
 - `queryDAO`
 - 主键字段访问器
@@ -29,7 +29,7 @@ go test ./...
 示例：
 
 ```go
-userRepo := repo.NewBaseRepo(
+userRepository := repository.NewBaseRepository(
     func(ctx context.Context) gen.Dao { return query.Use(db).User.WithContext(ctx) },
     func(ctx context.Context) field.Int64 { return query.Use(db).User.WithContext(ctx).ID },
     func(entity *model.User) int64 { return entity.ID },
@@ -62,6 +62,7 @@ userRepo := repo.NewBaseRepo(
 - `source` 为必填项，可通过 `-h` 查看帮助
 - 支持 `base_path` 统一追加 `models`、`query`、`data` 输出前缀
 - 联动生成 `models`、`query`、`data`
+- 生成模型、Repository 与字段名称时保留统一缩写表全大写，包含 GORM 内置缩写以及 `SKU`、`SPU`、`LLM` 等业务扩展缩写
 - 每次生成前自动删除 `models`、`query`、`data` 目标目录，避免旧表旧文件残留
 
 示例：

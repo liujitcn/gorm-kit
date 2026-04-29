@@ -75,31 +75,31 @@ var ProviderSet = wire.NewSet(
 	NewData,
 	NewTransaction,
 {{- range .Tables }}
-	New{{ .RepoName }}Repo,
+	New{{ .RepositoryName }}Repository,
 {{- end }}
 )
 `
 
-const repoFileTemplate = `package {{ .PackageName }}
+const repositoryFileTemplate = `package {{ .PackageName }}
 
 import (
 	"context"
 
-	"github.com/liujitcn/gorm-kit/repo"
+	"github.com/liujitcn/gorm-kit/repository"
 	"{{ .ModelImportPath }}"
 	"gorm.io/gen"
 	"gorm.io/gen/field"
 )
 
-// {{ .Table.RepoName }}Repo 定义 {{ .Table.ModelName }} 的基础仓储能力。
-type {{ .Table.RepoName }}Repo struct {
-	repo.BaseRepo[{{ .ModelPackage }}.{{ .Table.ModelName }}]
+// {{ .Table.RepositoryName }}Repository 定义 {{ .Table.ModelName }} 的基础仓储能力。
+type {{ .Table.RepositoryName }}Repository struct {
+	repository.BaseRepository[{{ .ModelPackage }}.{{ .Table.ModelName }}]
 	*Data
 }
 
-// New{{ .Table.RepoName }}Repo 创建 {{ .Table.ModelName }} 基础仓储实例。
-func New{{ .Table.RepoName }}Repo(data *Data) *{{ .Table.RepoName }}Repo {
-	base := repo.NewBaseRepo[{{ .ModelPackage }}.{{ .Table.ModelName }}](
+// New{{ .Table.RepositoryName }}Repository 创建 {{ .Table.ModelName }} 基础仓储实例。
+func New{{ .Table.RepositoryName }}Repository(data *Data) *{{ .Table.RepositoryName }}Repository {
+	base := repository.NewBaseRepository[{{ .ModelPackage }}.{{ .Table.ModelName }}](
 		func(ctx context.Context) gen.Dao {
 			return new(data.Query(ctx).{{ .Table.ModelName }}.WithContext(ctx).DO)
 		},
@@ -116,9 +116,9 @@ func New{{ .Table.RepoName }}Repo(data *Data) *{{ .Table.RepoName }}Repo {
 			return entity.{{ .Table.PrimaryKeyField }}
 		},
 	)
-	return &{{ .Table.RepoName }}Repo{
-		BaseRepo: base,
-		Data:     data,
+	return &{{ .Table.RepositoryName }}Repository{
+		BaseRepository: base,
+		Data:           data,
 	}
 }
 `

@@ -43,8 +43,10 @@ go run . -source='root:123456@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=Tr
 - `models` 目录会额外生成 `table_comment.gen.go`，用于在运行时暴露表注释，配合自动迁移恢复表注释
 - `data` 中引用的 `models`、`query` 会跟随实际导入路径与目标包名变化
 - `data` 包名取 `data_path` 最后一层目录名
-- `data` 中每个 Repo 默认生成导出结构体，并内嵌通用 `BaseRepo` 与 `*Data`
-- `data` 中 Repo 主键优先取模型声明顺序上的第一个 `int64` 主键字段；联合主键表同样按该规则生成，若不存在 `int64` 主键则回退到第一个主键字段
+- 模型、Repository 与字段名称会保留统一缩写表全大写，缩写表包含 GORM 内置缩写，以及 `SKU`、`SPU`、`ERP`、`CRM`、`OMS`、`WMS`、`POS`、`SMS`、`JWT`、`CDN`、`OSS`、`OTP`、`MFA`、`SSO`、`ACL`、`RBAC`、`IM`、`QR`、`GPS`、`LBS`、`MQ`、`COS`、`S3`、`LLM` 等业务扩展缩写
+- 缩写命名示例：`api_uri` 生成 `APIURI`，`client_ip` 生成 `ClientIP`，`sku_id` 生成 `SKUID`，`llm_model_id` 生成 `LLMModelID`
+- `data` 中每个 Repository 默认生成导出结构体，并内嵌通用 `BaseRepository` 与 `*Data`
+- `data` 中 Repository 主键优先取模型声明顺序上的第一个 `int64` 主键字段；联合主键表同样按该规则生成，若不存在 `int64` 主键则回退到第一个主键字段
 - 生成前会先删除整个 `model_pkg_path`、`out_path`、`data_path`
 
 ## 默认值

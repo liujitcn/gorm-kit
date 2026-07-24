@@ -1,0 +1,8 @@
+data:
+  database:
+    driver: sqlite
+    source: "file:./configs/example.db"
+  databases:
+    test:
+      driver: sqlite
+      source: "file:./configs/example.db"

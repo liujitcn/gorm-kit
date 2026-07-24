@@ -1,0 +1,41 @@
+package {{ .PackageName }}
+
+import (
+	"context"
+
+	"github.com/liujitcn/gorm-kit/repository"
+	"{{ .ModelImportPath }}"
+	"gorm.io/gen"
+	"gorm.io/gen/field"
+)
+
+// {{ .Table.RepositoryName }}Repository 定义 {{ if .Table.TableComment }}{{ .Table.TableComment }}{{ else }}{{ .Table.ModelName }}{{ end }} 的基础仓储能力。
+type {{ .Table.RepositoryName }}Repository struct {
+	repository.BaseRepository[{{ .ModelPackage }}.{{ .Table.ModelName }}]
+	*Data
+}
+
+// New{{ .Table.RepositoryName }}Repository 创建 {{ .Table.ModelName }} 基础仓储实例。
+func New{{ .Table.RepositoryName }}Repository(data *Data) *{{ .Table.RepositoryName }}Repository {
+	base := repository.NewBaseRepository[{{ .ModelPackage }}.{{ .Table.ModelName }}](
+		func(ctx context.Context) gen.Dao {
+			return new(data.Query(ctx).{{ .Table.ModelName }}.WithContext(ctx).DO)
+		},
+		func(ctx context.Context) field.Int64 {
+{{- if .Table.HasCompositePrimaryKey }}
+			// 联合主键场景默认使用第一个 int64 类型的主键字段。
+{{- end }}
+			return data.Query(ctx).{{ .Table.ModelName }}.{{ .Table.PrimaryKeyField }}
+		},
+		func(entity *{{ .ModelPackage }}.{{ .Table.ModelName }}) int64 {
+{{- if .Table.HasCompositePrimaryKey }}
+			// 联合主键场景默认使用实体上的第一个 int64 类型主键字段值。
+{{- end }}
+			return entity.{{ .Table.PrimaryKeyField }}
+		},
+	)
+	return &{{ .Table.RepositoryName }}Repository{
+		BaseRepository: base,
+		Data:           data,
+	}
+}

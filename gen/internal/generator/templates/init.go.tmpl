@@ -1,0 +1,13 @@
+package {{ .PackageName }}
+
+import "github.com/google/wire"
+
+// ProviderSet 定义 data 包依赖注入提供者集合。
+var ProviderSet = wire.NewSet(
+	NewClient,
+	NewData,
+	NewTransaction,
+{{- range .Tables }}
+	New{{ .RepositoryName }}Repository,
+{{- end }}
+)

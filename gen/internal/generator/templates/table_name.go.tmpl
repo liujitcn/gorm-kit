@@ -1,6 +1,1 @@
 package {{ .PackageName }}
-
-{{- range .Tables }}
-// TableName 返回 {{ .TableName }} 对应的数据表名称。
-func (*{{ .ModelName }}) TableName() string { return TableName{{ .ModelName }} }
-{{- end }}

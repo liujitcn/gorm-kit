@@ -13,27 +13,17 @@ type cleanupTarget struct {
 	path  string
 }
 
-// CleanOutputPath 清空生成输出目录中的全部内容并保留目录本身。
+// CleanOutputPath 只清理输出根目录中的 query、data、repo 目录。
 func CleanOutputPath(path string) error {
 	dir, err := resolveGeneratedPath("output", path)
 	if err != nil {
 		return err
 	}
-	var entries []os.DirEntry
-	entries, err = os.ReadDir(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return fmt.Errorf("读取输出目录%s失败: %w", dir, err)
-	}
-	for _, entry := range entries {
-		entryPath := filepath.Join(dir, entry.Name())
-		if err = os.RemoveAll(entryPath); err != nil {
-			return fmt.Errorf("清理输出目录%s失败: %w", entryPath, err)
-		}
-	}
-	return nil
+	return cleanupTargets(
+		cleanupTarget{label: "query", path: filepath.Join(dir, defaultOutPath)},
+		cleanupTarget{label: "data", path: filepath.Join(dir, defaultDataPath)},
+		cleanupTarget{label: "repo", path: filepath.Join(dir, defaultRepoPath)},
+	)
 }
 
 // cleanupTargets 按传入顺序清理生成目录，并自动跳过重复目录。
@@ -50,7 +40,7 @@ func cleanupTargets(targets ...cleanupTarget) error {
 	return nil
 }
 
-// cleanupGeneratedDirs 清理 gorm/gen 产物目录，避免已删除表的历史文件残留。
+// cleanupGeneratedDirs 只清理生成器负责重建的 query、data、repo 目录。
 func (g *Gen) cleanupGeneratedDirs() error {
 	if g.opts.table != "" {
 		// 单表模式必须保留其他表产物，只允许覆盖当前表对应文件和聚合入口。
@@ -58,7 +48,8 @@ func (g *Gen) cleanupGeneratedDirs() error {
 	}
 	return cleanupTargets(
 		cleanupTarget{label: "query", path: g.opts.outPath},
-		cleanupTarget{label: "model", path: g.opts.modelPkgPath},
+		cleanupTarget{label: "data", path: g.opts.dataPath},
+		cleanupTarget{label: "repo", path: g.opts.repoPath},
 	)
 }
 

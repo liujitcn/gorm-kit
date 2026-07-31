@@ -53,7 +53,7 @@ func (g *Gen) Generate() ([]interface{}, error) {
 	// 4. 基于本次选中的表生成模型与查询代码。
 	generator.ApplyBasic(tableModels...)
 	generator.Execute()
-	if err = generateTableNameFile(g.opts, tableModels); err != nil {
+	if err = normalizeLegacyTableNameFile(g.opts); err != nil {
 		return nil, err
 	}
 	if g.opts.table != "" {
@@ -102,7 +102,7 @@ func loadGeneratedTableMetas(modelPath string, queryPath string) ([]tableMeta, e
 	}
 	tables := make([]tableMeta, 0, len(entries))
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".gen.go") || entry.Name() == "table_comment.gen.go" {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".gen.go") || entry.Name() == "table_comment.gen.go" || entry.Name() == "table_name.gen.go" {
 			continue
 		}
 		tableName := strings.TrimSuffix(entry.Name(), ".gen.go")

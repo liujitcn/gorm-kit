@@ -1,29 +1,27 @@
 package generator
 
-import "path/filepath"
+import (
+	"os"
+	"path/filepath"
+)
 
-// generateTableNameFile 生成模型到真实表名的 GORM 映射方法。
-func generateTableNameFile(opts options, tableModels []interface{}) error {
-	var tables []tableMeta
-	var err error
-	if opts.table == "" {
-		tables, err = loadTables(tableModels)
-	} else {
-		tables, err = loadGeneratedTableMetas(opts.modelPkgPath, opts.outPath)
+// normalizeLegacyTableNameFile 清空历史辅助文件中的重复方法，表名映射由 GORM 模型文件提供。
+func normalizeLegacyTableNameFile(opts options) error {
+	modelDir, err := resolveModelPath(opts.modelPkgPath)
+	if err != nil {
+		return err
+	}
+	filename := filepath.Join(modelDir, "table_name.gen.go")
+	_, err = os.Stat(filename)
+	if os.IsNotExist(err) {
+		return nil
 	}
 	if err != nil {
 		return err
 	}
-	var modelDir string
-	modelDir, err = resolveModelPath(opts.modelPkgPath)
-	if err != nil {
-		return err
-	}
-	return writeTemplateFile(filepath.Join(modelDir, "table_name.gen.go"), tableNameFileTemplate, struct {
+	return writeTemplateFile(filename, tableNameFileTemplate, struct {
 		PackageName string
-		Tables      []tableMeta
 	}{
 		PackageName: filepath.Base(modelDir),
-		Tables:      tables,
 	})
 }

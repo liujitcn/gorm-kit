@@ -11,6 +11,7 @@ const (
 	defaultOutPath      = "query"
 	defaultModelPkgPath = "models"
 	defaultDataPath     = "data"
+	defaultRepoPath     = "repo"
 )
 
 // Config 描述单数据源生成器的内部配置。
@@ -33,6 +34,7 @@ type options struct {
 	outPath      string
 	modelPkgPath string
 	dataPath     string
+	repoPath     string
 }
 
 // buildOptions 补齐默认值并派生固定的模型、查询和 data 输出目录。
@@ -52,5 +54,6 @@ func buildOptions(config Config) options {
 		outPath:      filepath.Join(config.BasePath, defaultOutPath),
 		modelPkgPath: filepath.Join(config.BasePath, defaultModelPkgPath),
 		dataPath:     filepath.Join(config.BasePath, defaultDataPath),
+		repoPath:     filepath.Join(config.BasePath, defaultRepoPath),
 	}
 }

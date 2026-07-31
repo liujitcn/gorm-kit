@@ -67,7 +67,7 @@ userRepository := repository.NewBaseRepository(
 - 输出按数据源隔离：旧单库使用 `gen/{models,query,data}`，命名数据源使用 `gen/<name>/{models,query,data}`
 - 每套 `data` 生成 `Models()`、`NewClient()`、`NewData()`、不含客户端的 `RepositoryProviderSet` 与完整的 `ProviderSet`
 - 默认数据源的 `NewClient` 接收单个 `*configv1.Data_Database`；命名数据源的 `NewClient` 接收 `databases map[string]*configv1.Data_Database` 并按 key 取出当前配置
-- `source`、`driver`、详细输出路径参数继续兼容单库调用
+- 命令行只负责选择配置、数据源、表和生成根目录，连接与驱动统一从服务配置读取
 - 生成模板拆分在 `gen/internal/generator/templates/*.tmpl`，并通过 `go:embed` 嵌入生成器
 - 生成模型、Repository 与字段名称时保留统一缩写表全大写，包含 GORM 内置缩写以及 `SKU`、`SPU`、`LLM` 等业务扩展缩写
 - 全量生成清空目标范围：未指定 `-database` 时清空整个 `base_path`，指定 `-database` 时只清空对应数据源目录；单表生成保留其他表产物
@@ -80,20 +80,14 @@ go run ./cmd/gorm-gen -h
 go run ./cmd/gorm-gen
 go run ./cmd/gorm-gen -database=main
 go run ./cmd/gorm-gen -config=./configs/data.yaml -database=main -table=user,user2
-go run ./cmd/gorm-gen -source='root:123456@tcp(127.0.0.1:3306)/shop?charset=utf8&parseTime=True&loc=Local&timeout=1000ms'
 ```
 
 当前支持的参数：
 
 - `config`
 - `database`
-- `driver`
-- `source`
 - `table`
 - `base_path`
-- `out_path`（仅单库兼容模式）
-- `model_pkg_path`（仅单库兼容模式）
-- `data_path`（仅单库兼容模式）
 
 更完整说明见：
 

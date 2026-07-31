@@ -49,15 +49,7 @@ gen/auditprod/{models,query,data}
 
 未传 `database` 时生成合并后的全部数据源；传入 `database` 时只生成指定数据源。传入 `table` 时必须同时指定 `database`。
 
-单库兼容参数仍可使用：
-
-```bash
-go run ./cmd/gorm-gen \
-  -source='root:password@tcp(127.0.0.1:3306)/shop?charset=utf8mb4&parseTime=True&loc=Local' \
-  -table=user,user2
-```
-
-单库模式还支持 `driver`、`out_path`、`model_pkg_path`、`data_path`；这些详细输出路径不适用于配置文件多数据源模式。
+数据库驱动和连接串统一在服务配置中声明；Doris 数据源使用 `driver: doris`。模型、查询和 data 目录固定生成到 `base_path` 下，不再单独配置详细输出路径。
 
 ## 生成规则
 
@@ -68,13 +60,14 @@ go run ./cmd/gorm-gen \
 - 数据源目录名统一转小写并去掉连接符；规范化后冲突直接报错。
 - 每套 `data` 包生成 `Models()`、`NewClient()`、`NewData()`、不含客户端的 `RepositoryProviderSet` 和完整的 `ProviderSet`，迁移模型只绑定当前数据源。
 - 默认数据源的 `NewClient` 接收单个 `*configv1.Data_Database`；命名数据源的 `NewClient` 接收 `databases map[string]*configv1.Data_Database` 并按 key 取出当前配置。
+- Doris 使用 `information_schema` 读取字段元数据，避免默认采样查询追加 Doris 不兼容的 `LIMIT`。
 - 模型、Repository 与字段名称沿用 `go-utils/stringcase` 的缩写规则；`BIGINT deleted_at` 保留 `soft_delete.DeletedAt` 生成策略。
 
 ## 结构
 
 ```text
 gen/
-├── api.go                    # 对外公开的生成器与配置入口
+├── api.go                    # 对外公开的配置生成入口
 ├── cmd/gorm-gen/             # CLI 适配层
 └── internal/
     ├── config/               # data.yaml 读取、选择与批量编排

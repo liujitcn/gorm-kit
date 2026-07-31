@@ -19,9 +19,9 @@ func Models() []interface{} {
 }
 
 // NewClient 创建绑定当前数据源模型范围的 GORM 客户端。
-{{- if .DatabaseKey }}
+{{- if .NamedSource }}
 func NewClient(databases map[string]*configv1.Data_Database) (*databaseGorm.Client, func(), error) {
-	database := databases[{{ printf "%q" .DatabaseKey }}]
+	database := databases[{{ printf "%q" .SourceName }}]
 	return databaseGorm.NewGormClient(
 		database,
 		databaseGorm.WithName({{ printf "%q" .SourceName }}),

@@ -83,20 +83,16 @@ func GenerateConfig(opts ConfigOptions) error {
 		if !source.legacy {
 			generatedPath = filepath.Join(basePath, source.directory)
 		}
-		options := []generator.Option{
-			generator.WithDriver(source.driver),
-			generator.WithSource(source.source),
-			generator.WithName(source.name),
-			generator.WithBasePath(generatedPath),
-		}
-		if !source.legacy {
-			options = append(options, generator.WithDatabaseKey(source.name))
-		}
-		if opts.Table != "" {
-			options = append(options, generator.WithTable(opts.Table))
-		}
-		if _, generateErr := generator.NewGen(options...).Generate(); generateErr != nil {
-			generationErrors = append(generationErrors, fmt.Errorf("数据源%s生成失败: %w", source.name, generateErr))
+		_, err = generator.NewGen(generator.Config{
+			Driver:      source.driver,
+			Source:      source.source,
+			SourceName:  source.name,
+			NamedSource: !source.legacy,
+			Table:       opts.Table,
+			BasePath:    generatedPath,
+		}).Generate()
+		if err != nil {
+			generationErrors = append(generationErrors, fmt.Errorf("数据源%s生成失败: %w", source.name, err))
 		}
 	}
 	return errors.Join(generationErrors...)

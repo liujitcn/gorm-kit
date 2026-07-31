@@ -23,26 +23,14 @@ const (
 
 // Gen 封装 gorm/gen 生成能力。
 type Gen struct {
-	opts options
+	opts          options
+	db            *gorm.DB
+	gormGenerator *gormgen.Generator
 }
 
 // NewGen 创建生成器实例。
-func NewGen(opts ...Option) *Gen {
-	o := defaultOptions()
-	// 按传入顺序应用 Option，后面的配置可以覆盖前面的配置。
-	for _, opt := range opts {
-		if opt != nil {
-			opt(&o)
-		}
-	}
-	o.ApplyBasePath()
-	return &Gen{opts: o}
-}
-
-// Execute 执行代码生成。
-func (g *Gen) Execute() error {
-	_, err := g.Generate()
-	return err
+func NewGen(config Config) *Gen {
+	return &Gen{opts: buildOptions(config)}
 }
 
 // Generate 按配置执行全部表或单表代码生成，并返回本次生成的表结果。
@@ -65,6 +53,9 @@ func (g *Gen) Generate() ([]interface{}, error) {
 	// 4. 基于本次选中的表生成模型与查询代码。
 	generator.ApplyBasic(tableModels...)
 	generator.Execute()
+	if err = generateTableNameFile(g.opts, tableModels); err != nil {
+		return nil, err
+	}
 	if g.opts.table != "" {
 		var tables []tableMeta
 		tables, err = loadGeneratedTableMetas(g.opts.modelPkgPath, g.opts.outPath)
@@ -160,11 +151,15 @@ func (g *Gen) generateTableModels(generator *gormgen.Generator) ([]interface{}, 
 		tableModels := make([]interface{}, 0, len(tableNames))
 		for _, tableName := range tableNames {
 			// 指定多张表时先全部读取成功，再进入文件写入阶段。
-			tableModel, generateErr := generateTableModel(tableName, func() interface{} {
+			var tableModel interface{}
+			tableModel, err = generateTableModel(tableName, func() interface{} {
+				if g.opts.driver == "doris" {
+					return g.generateDorisModel(tableName)
+				}
 				return generator.GenerateModel(tableName, g.buildModelOpts()...)
 			})
-			if generateErr != nil {
-				return nil, generateErr
+			if err != nil {
+				return nil, err
 			}
 			tableModels = append(tableModels, tableModel)
 		}
@@ -172,7 +167,7 @@ func (g *Gen) generateTableModels(generator *gormgen.Generator) ([]interface{}, 
 	}
 	tableModels := g.generateAllTable(generator)
 	if len(tableModels) == 0 {
-		return nil, fmt.Errorf("数据源%s未发现可生成的表", g.sourceName())
+		return nil, fmt.Errorf("数据源%s未发现可生成的表", g.opts.sourceName)
 	}
 	return tableModels, nil
 }
@@ -185,27 +180,6 @@ func generateTableModel(tableName string, generate func() interface{}) (tableMod
 		}
 	}()
 	return generate(), nil
-}
-
-// GenerateAllTable 导出当前配置下数据库全部表的生成结果。
-func (g *Gen) GenerateAllTable() ([]interface{}, error) {
-	generator, err := g.newGenerator()
-	if err != nil {
-		return nil, err
-	}
-	tableModels := g.generateAllTable(generator)
-	if len(tableModels) == 0 {
-		return nil, fmt.Errorf("数据源%s未发现可生成的表", g.sourceName())
-	}
-	return tableModels, nil
-}
-
-// sourceName 返回错误和生成模板使用的数据源名称。
-func (g *Gen) sourceName() string {
-	if g.opts.sourceName == "" {
-		return "default"
-	}
-	return g.opts.sourceName
 }
 
 // parseTableNames 解析逗号分隔的表名，并保留数据库原始标识符。
@@ -238,6 +212,7 @@ func (g *Gen) newGenerator() (*gormgen.Generator, error) {
 	if err != nil {
 		return nil, err
 	}
+	g.db = db
 
 	// 3. 初始化生成器并写入基础配置。
 	generator := gormgen.NewGenerator(gormgen.Config{
@@ -253,8 +228,11 @@ func (g *Gen) newGenerator() (*gormgen.Generator, error) {
 	generator.UseDB(db)
 	// 使用固定的下划线转驼峰策略生成模型名。
 	generator.WithModelNameStrategy(g.buildTableToModelNameStrategy())
-	// 预注册软删除插件包路径；未用到该类型的模型文件会由 imports.Process 自动清理多余 import。
-	generator.WithImportPkgPath(softDeleteImportPkgPath)
+	// Doris 自定义对象会按字段类型声明软删除包；重复预注册会让 gorm/gen 生成无引号的重复 import。
+	if opts.driver != "doris" {
+		generator.WithImportPkgPath(softDeleteImportPkgPath)
+	}
+	g.gormGenerator = generator
 	return generator, nil
 }
 
@@ -267,6 +245,9 @@ func (g *Gen) buildTableToModelNameStrategy() func(tableName string) string {
 
 // generateAllTable 使用统一命名选项导出当前数据库全部表。
 func (g *Gen) generateAllTable(generator *gormgen.Generator) []interface{} {
+	if g.opts.driver == "doris" {
+		return g.generateAllDorisTables()
+	}
 	return generator.GenerateAllTable(g.buildModelOpts()...)
 }
 

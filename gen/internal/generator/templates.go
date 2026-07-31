@@ -12,6 +12,7 @@ const (
 	initFileTemplate         = "init.go.tmpl"
 	repositoryFileTemplate   = "repository.go.tmpl"
 	modelCommentFileTemplate = "model_comment.go.tmpl"
+	tableNameFileTemplate    = "table_name.go.tmpl"
 )
 
 // templateFS 嵌入生成器使用的模板文件，避免运行时依赖当前工作目录。

@@ -35,7 +35,7 @@ type dataTemplateContext struct {
 	ModelImportPath string
 	QueryImportPath string
 	SourceName      string
-	DatabaseKey     string
+	NamedSource     bool
 	Tables          []tableMeta
 }
 
@@ -165,7 +165,7 @@ func extractFirstPrimaryKeyField(value reflect.Value) string {
 		if fieldValue.Kind() != reflect.Struct {
 			continue
 		}
-		if !hasPrimaryKeyTag(fieldValue.FieldByName("GORMTag")) {
+		if !fieldHasPrimaryKeyTag(fieldValue) {
 			continue
 		}
 		name, ok := readStringField(fieldValue, "Name")
@@ -195,6 +195,30 @@ func hasPrimaryKeyTag(value reflect.Value) bool {
 	return tagValue.IsValid()
 }
 
+// fieldHasPrimaryKeyTag 兼容数据库模型与 helper.Object 两种元数据标签存储位置。
+func fieldHasPrimaryKeyTag(value reflect.Value) bool {
+	if hasPrimaryKeyTag(value.FieldByName("GORMTag")) {
+		return true
+	}
+	tagValue := value.FieldByName("Tag")
+	if hasPrimaryKeyTag(tagValue) {
+		return true
+	}
+	if !tagValue.IsValid() || tagValue.Kind() != reflect.Map {
+		return false
+	}
+	gormTag := tagValue.MapIndex(reflect.ValueOf(genField.TagKeyGorm))
+	if !gormTag.IsValid() || gormTag.Kind() != reflect.String {
+		return false
+	}
+	for _, tag := range strings.Split(gormTag.String(), ";") {
+		if tag == genField.TagKeyGormPrimaryKey || strings.HasPrefix(tag, genField.TagKeyGormPrimaryKey+":") {
+			return true
+		}
+	}
+	return false
+}
+
 // countPrimaryKeyFields 统计主键字段数量，用于识别联合主键场景。
 func countPrimaryKeyFields(value reflect.Value) int {
 	fieldsValue := value.FieldByName("Fields")
@@ -213,7 +237,7 @@ func countPrimaryKeyFields(value reflect.Value) int {
 		if fieldValue.Kind() != reflect.Struct {
 			continue
 		}
-		if hasPrimaryKeyTag(fieldValue.FieldByName("GORMTag")) {
+		if fieldHasPrimaryKeyTag(fieldValue) {
 			count++
 		}
 	}
@@ -287,18 +311,10 @@ func buildDataTemplateContext(dataDir string, opts options, tables []tableMeta) 
 		QueryPackage:    buildPackageName(opts.outPath),
 		ModelImportPath: buildImportPath(modulePath, opts.modelPkgPath),
 		QueryImportPath: buildImportPath(modulePath, opts.outPath),
-		SourceName:      sourceName(opts.sourceName),
-		DatabaseKey:     opts.databaseKey,
+		SourceName:      opts.sourceName,
+		NamedSource:     opts.namedSource,
 		Tables:          tables,
 	}, nil
-}
-
-// sourceName 返回生成代码中使用的数据源名称。
-func sourceName(name string) string {
-	if name == "" {
-		return "default"
-	}
-	return name
 }
 
 // resolveModulePath 从 data 输出目录向上查找 go.mod，并解析模块名。

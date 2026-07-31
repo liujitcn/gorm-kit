@@ -66,7 +66,7 @@ go run ./cmd/gorm-gen \
 - 全量生成会清空本次目标范围的输出目录：未指定 `database` 时清空整个 `base_path`，指定 `database` 时只清空对应数据源目录；指定表时不清理目录。
 - 指定表时保留其他表产物，只更新指定表并重建聚合入口。
 - 数据源目录名统一转小写并去掉连接符；规范化后冲突直接报错。
-- 每套 `data` 包生成 `Models()`、`NewClient()`、`NewData()` 和 Repository ProviderSet，迁移模型只绑定当前数据源。
+- 每套 `data` 包生成 `Models()`、`NewClient()`、`NewData()`、不含客户端的 `RepositoryProviderSet` 和完整的 `ProviderSet`，迁移模型只绑定当前数据源。
 - 默认数据源的 `NewClient` 接收单个 `*configv1.Data_Database`；命名数据源的 `NewClient` 接收 `databases map[string]*configv1.Data_Database` 并按 key 取出当前配置。
 - 模型、Repository 与字段名称沿用 `go-utils/stringcase` 的缩写规则；`BIGINT deleted_at` 保留 `soft_delete.DeletedAt` 生成策略。
 

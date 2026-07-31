@@ -65,7 +65,7 @@ userRepository := repository.NewBaseRepository(
 - 一次命令生成多个命名数据源，支持 `-database` 选择单个数据源
 - `table` 支持逗号分隔的多表，例如 `user,user2`
 - 输出按数据源隔离：旧单库使用 `gen/{models,query,data}`，命名数据源使用 `gen/<name>/{models,query,data}`
-- 每套 `data` 生成 `Models()`、`NewClient()`、`NewData()` 与 Repository ProviderSet
+- 每套 `data` 生成 `Models()`、`NewClient()`、`NewData()`、不含客户端的 `RepositoryProviderSet` 与完整的 `ProviderSet`
 - 默认数据源的 `NewClient` 接收单个 `*configv1.Data_Database`；命名数据源的 `NewClient` 接收 `databases map[string]*configv1.Data_Database` 并按 key 取出当前配置
 - `source`、`driver`、详细输出路径参数继续兼容单库调用
 - 生成模板拆分在 `gen/internal/generator/templates/*.tmpl`，并通过 `go:embed` 嵌入生成器

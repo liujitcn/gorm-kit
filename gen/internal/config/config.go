@@ -4,9 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
-	"unicode"
 
 	"github.com/liujitcn/gorm-kit/gen/internal/generator"
 	"gopkg.in/yaml.v3"
@@ -40,11 +37,10 @@ type generatorDatabaseConfig struct {
 }
 
 type configSource struct {
-	name      string
-	driver    string
-	source    string
-	legacy    bool
-	directory string
+	name   string
+	driver string
+	source string
+	legacy bool
 }
 
 // GenerateConfig 读取服务配置并生成一个或多个数据源的代码。
@@ -61,35 +57,21 @@ func GenerateConfig(opts ConfigOptions) error {
 	if err != nil {
 		return err
 	}
-	if opts.Table != "" && opts.DatabaseName == "" && (!hasLegacySource(sources) || len(sources) > 1) {
-		return errors.New("使用 table 参数时必须指定 database")
-	}
-	if err = validateSourceDirectories(sources); err != nil {
-		return err
-	}
 	if opts.Table == "" {
-		cleanPath := basePath
-		if opts.DatabaseName != "" && !sources[0].legacy {
-			cleanPath = filepath.Join(basePath, sources[0].directory)
-		}
-		if err = generator.CleanOutputPath(cleanPath); err != nil {
+		if err = generator.CleanOutputPath(basePath); err != nil {
 			return err
 		}
 	}
 
 	var generationErrors []error
 	for _, source := range sources {
-		generatedPath := basePath
-		if !source.legacy {
-			generatedPath = filepath.Join(basePath, source.directory)
-		}
 		_, err = generator.NewGen(generator.Config{
 			Driver:      source.driver,
 			Source:      source.source,
 			SourceName:  source.name,
 			NamedSource: !source.legacy,
 			Table:       opts.Table,
-			BasePath:    generatedPath,
+			BasePath:    basePath,
 		}).Generate()
 		if err != nil {
 			generationErrors = append(generationErrors, fmt.Errorf("数据源%s生成失败: %w", source.name, err))
@@ -137,63 +119,15 @@ func loadConfigSources(filename string, selectedName string) ([]configSource, er
 		return nil, errors.New("未配置任何数据库数据源")
 	}
 
-	if selectedName != "" {
-		source, exists := sources[selectedName]
-		if !exists {
-			return nil, fmt.Errorf("数据库数据源不存在: %s", selectedName)
-		}
-		source.directory, err = normalizeSourceDirectory(source.name)
-		if err != nil {
-			return nil, err
-		}
-		return []configSource{source}, nil
+	if selectedName == "" {
+		selectedName = "default"
 	}
-	result := make([]configSource, 0, len(sources))
-	for _, source := range sources {
-		source.directory, err = normalizeSourceDirectory(source.name)
-		if err != nil {
-			return nil, err
+	source, exists := sources[selectedName]
+	if !exists {
+		if selectedName == "default" {
+			return nil, errors.New("未配置默认数据库数据源，请通过 database 参数指定数据源")
 		}
-		result = append(result, source)
+		return nil, fmt.Errorf("数据库数据源不存在: %s", selectedName)
 	}
-	return result, nil
-}
-
-// hasLegacySource 判断当前生成目标是否包含旧的单数据库配置。
-func hasLegacySource(sources []configSource) bool {
-	for _, source := range sources {
-		if source.legacy {
-			return true
-		}
-	}
-	return false
-}
-
-// validateSourceDirectories 校验数据源目录规范化后的唯一性。
-func validateSourceDirectories(sources []configSource) error {
-	directories := make(map[string]string, len(sources))
-	for _, source := range sources {
-		if source.legacy {
-			continue
-		}
-		if previous, exists := directories[source.directory]; exists {
-			return fmt.Errorf("数据源名称规范化后冲突: %s 与 %s", previous, source.name)
-		}
-		directories[source.directory] = source.name
-	}
-	return nil
-}
-
-// normalizeSourceDirectory 将数据源名称转为全小写、去连接符的生成目录名。
-func normalizeSourceDirectory(name string) (string, error) {
-	var builder strings.Builder
-	for _, character := range strings.ToLower(name) {
-		if unicode.IsLetter(character) || unicode.IsDigit(character) {
-			builder.WriteRune(character)
-		}
-	}
-	if builder.Len() == 0 {
-		return "", fmt.Errorf("数据源名称无法生成目录: %s", name)
-	}
-	return builder.String(), nil
+	return []configSource{source}, nil
 }

@@ -34,10 +34,9 @@ func buildUsage() {
 	_, _ = fmt.Fprintf(flag.CommandLine.Output(), "  %s [-config=./configs/data.yaml] [参数]\n\n", os.Args[0])
 	flag.PrintDefaults()
 	_, _ = fmt.Fprintf(flag.CommandLine.Output(), "\n说明:\n")
-	_, _ = fmt.Fprintln(flag.CommandLine.Output(), "  未传 database 时合并生成 data.database(default) 与 data.databases。")
-	_, _ = fmt.Fprintln(flag.CommandLine.Output(), "  未传 database 且只有 data.databases 时生成全部命名数据源。")
-	_, _ = fmt.Fprintln(flag.CommandLine.Output(), "  table 支持 user,user2；多数据源模式必须同时指定 database。")
-	_, _ = fmt.Fprintln(flag.CommandLine.Output(), "  命名数据源输出到 gen/<数据源>/，可用 base_path 覆盖 gen。")
+	_, _ = fmt.Fprintln(flag.CommandLine.Output(), "  未传 database 时使用默认数据源；传入 database 时使用对应命名数据源。")
+	_, _ = fmt.Fprintln(flag.CommandLine.Output(), "  table 支持 user,user2；未传 database 时同样使用默认数据源。")
+	_, _ = fmt.Fprintln(flag.CommandLine.Output(), "  所有数据源都输出到 base_path，可用 base_path 覆盖默认 gen。")
 }
 
 // exitWithError 输出错误并以失败状态退出。

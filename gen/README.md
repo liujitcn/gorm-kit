@@ -31,14 +31,13 @@ data:
       source: postgres://user:password@127.0.0.1:5432/audit
 ```
 
-命名数据源默认生成到：
+生成目录始终以 `base_path` 为准，不会因为数据源名称追加子目录：
 
 ```text
-gen/main/{models,query,data}
-gen/auditprod/{models,query,data}
+gen/{models,query,data}
 ```
 
-旧的 `data.database` 生成到 `gen/{models,query,data}`。两种字段同时存在时会合并生成，旧字段名称为 `default`，命名数据源生成到 `gen/<key>/{models,query,data}`；`databases.default` 与旧字段冲突时报错。
+旧的 `data.database` 按名称 `default` 兼容。两种字段同时存在时仍可通过 `-database` 选择 `data.databases` 中的数据源；不传 `-database` 时使用默认数据源。`databases.default` 与旧字段冲突时报错。
 
 ## 参数
 
@@ -47,17 +46,15 @@ gen/auditprod/{models,query,data}
 - `table`：指定表，支持 `user,user2`
 - `base_path`：生成根目录，默认 `gen`
 
-未传 `database` 时生成合并后的全部数据源；传入 `database` 时只生成指定数据源。传入 `table` 时必须同时指定 `database`。
+未传 `database` 时生成默认数据源；传入 `database` 时只生成指定数据源。传入 `table` 时也遵循同样的选择规则。
 
 数据库驱动和连接串统一在服务配置中声明；Doris 数据源使用 `driver: doris`。模型、查询和 data 目录固定生成到 `base_path` 下，不再单独配置详细输出路径。
 
 ## 生成规则
 
 - 默认生成数据源全部表；指定 `table` 时先校验全部表，任一表不存在则当前数据源生成失败。
-- 多数据源生成按 map 实际遍历顺序执行；某个数据源失败后继续处理其他数据源，命令最后以非零状态汇总错误。
-- 全量生成只清理目标 `base_path` 下的 `query`、`data`、`repo` 目录，`models` 和其他目录保持不变；命名数据源同样只清理其自身目录下的这三个子目录，指定表时不清理目录。
+- 全量生成只清理目标 `base_path` 下的 `query`、`data`、`repo` 目录，`models` 和其他目录保持不变；指定表时不清理目录。
 - 指定表时保留其他表产物，只更新指定表并重建聚合入口。
-- 数据源目录名统一转小写并去掉连接符；规范化后冲突直接报错。
 - 每套 `data` 包生成 `Models()`、`NewClient()`、`NewData()`、不含客户端的 `RepositoryProviderSet` 和完整的 `ProviderSet`，迁移模型只绑定当前数据源。
 - 默认数据源的 `NewClient` 接收单个 `*configv1.Data_Database`；命名数据源的 `NewClient` 接收 `databases map[string]*configv1.Data_Database` 并按 key 取出当前配置。
 - Doris 使用 `information_schema` 读取字段元数据，避免默认采样查询追加 Doris 不兼容的 `LIMIT`。

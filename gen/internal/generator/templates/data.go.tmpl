@@ -21,8 +21,8 @@ func Models() []interface{} {
 // NewClient 创建绑定当前数据源模型范围的 GORM 客户端。
 {{- if .NamedSource }}
 func NewClient(databases map[string]*configv1.Data_Database) (*databaseGorm.Client, func(), error) {
-	database := databases[{{ printf "%q" .SourceName }}]
-	if database == nil {
+	database, ok := databases[{{ printf "%q" .SourceName }}]
+	if !ok {
 		// 当前数据源未配置时回退到默认数据源，保留当前目录对应的迁移模型和名称。
 		database = databases["default"]
 	}

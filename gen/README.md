@@ -31,13 +31,14 @@ data:
       source: postgres://user:password@127.0.0.1:5432/audit
 ```
 
-生成目录始终以 `base_path` 为准，不会因为数据源名称追加子目录：
+默认数据源直接生成到 `base_path`，命名数据源生成到 `base_path/<数据源>`：
 
 ```text
 gen/{models,query,data}
+gen/main/{models,query,data}
 ```
 
-旧的 `data.database` 按名称 `default` 兼容。两种字段同时存在时仍可通过 `-database` 选择 `data.databases` 中的数据源；不传 `-database` 时使用默认数据源。传入的 `-database` 不存在时也回退到默认数据源。`databases.default` 与旧字段冲突时报错。
+旧的 `data.database` 按名称 `default` 兼容并直接输出到 `base_path`。两种字段同时存在时仍可通过 `-database` 选择 `data.databases` 中的数据源；不传 `-database` 时使用默认数据源。传入 `-database` 时始终使用传入名称生成目录；名称不存在时连接配置回退到默认数据源。`databases.default` 与旧字段冲突时报错。
 
 ## 参数
 
@@ -46,14 +47,14 @@ gen/{models,query,data}
 - `table`：指定表，支持 `user,user2`
 - `base_path`：生成根目录，默认 `gen`
 
-未传 `database` 时生成默认数据源；传入 `database` 时优先生成指定数据源，不存在时回退到默认数据源。传入 `table` 时也遵循同样的选择规则。
+未传 `database` 时生成默认数据源；传入 `database` 时始终按指定名称生成目录，连接配置不存在时回退到默认数据源。传入 `table` 时也遵循同样的选择规则。
 
-数据库驱动和连接串统一在服务配置中声明；Doris 数据源使用 `driver: doris`。模型、查询和 data 目录固定生成到 `base_path` 下，不再单独配置详细输出路径。
+数据库驱动和连接串统一在服务配置中声明；Doris 数据源使用 `driver: doris`。默认数据源的模型、查询和 data 目录生成到 `base_path`，命名数据源生成到 `base_path/<数据源>`，不再单独配置详细输出路径。
 
 ## 生成规则
 
 - 默认生成数据源全部表；指定 `table` 时先校验全部表，任一表不存在则当前数据源生成失败。
-- 全量生成只清理目标 `base_path` 下的 `query`、`data`、`repo` 目录，`models` 和其他目录保持不变；指定表时不清理目录。
+- 全量生成只清理目标数据源目录下的 `query`、`data`、`repo` 目录，`models` 和其他目录保持不变；指定表时不清理目录。
 - 指定表时保留其他表产物，只更新指定表并重建聚合入口。
 - 每套 `data` 包生成 `Models()`、`NewClient()`、`NewData()`、不含客户端的 `RepositoryProviderSet` 和完整的 `ProviderSet`，迁移模型只绑定当前数据源。
 - 默认数据源的 `NewClient` 接收单个 `*configv1.Data_Database`；命名数据源的 `NewClient` 接收 `databases map[string]*configv1.Data_Database`，优先按当前目录对应的数据源名称取配置，不存在时回退到 `default`，迁移模型和客户端名称仍保留当前数据源名称。

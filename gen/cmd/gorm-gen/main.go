@@ -34,9 +34,9 @@ func buildUsage() {
 	_, _ = fmt.Fprintf(flag.CommandLine.Output(), "  %s [-config=./configs/data.yaml] [参数]\n\n", os.Args[0])
 	flag.PrintDefaults()
 	_, _ = fmt.Fprintf(flag.CommandLine.Output(), "\n说明:\n")
-	_, _ = fmt.Fprintln(flag.CommandLine.Output(), "  未传 database 时使用默认数据源；传入不存在的数据源时回退到默认数据源。")
+	_, _ = fmt.Fprintln(flag.CommandLine.Output(), "  未传 database 时使用默认数据源；传入 database 时始终按该名称生成目录，不存在时连接配置回退到默认数据源。")
 	_, _ = fmt.Fprintln(flag.CommandLine.Output(), "  table 支持 user,user2；未传 database 时同样使用默认数据源。")
-	_, _ = fmt.Fprintln(flag.CommandLine.Output(), "  所有数据源都输出到 base_path，可用 base_path 覆盖默认 gen。")
+	_, _ = fmt.Fprintln(flag.CommandLine.Output(), "  默认数据源输出到 base_path，命名数据源输出到 base_path/<数据源>，可用 base_path 覆盖默认 gen。")
 }
 
 // exitWithError 输出错误并以失败状态退出。

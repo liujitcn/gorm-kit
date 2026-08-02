@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
+	"unicode"
 
 	"github.com/liujitcn/gorm-kit/gen/internal/generator"
 	"gopkg.in/yaml.v3"
@@ -37,10 +40,11 @@ type generatorDatabaseConfig struct {
 }
 
 type configSource struct {
-	name   string
-	driver string
-	source string
-	legacy bool
+	name      string
+	driver    string
+	source    string
+	legacy    bool
+	directory string
 }
 
 // GenerateConfig 读取服务配置并生成一个或多个数据源的代码。
@@ -57,21 +61,24 @@ func GenerateConfig(opts ConfigOptions) error {
 	if err != nil {
 		return err
 	}
-	if opts.Table == "" {
-		if err = generator.CleanOutputPath(basePath); err != nil {
-			return err
-		}
-	}
-
 	var generationErrors []error
 	for _, source := range sources {
+		generatedPath := basePath
+		if source.name != "default" {
+			generatedPath = filepath.Join(basePath, source.directory)
+		}
+		if opts.Table == "" {
+			if err = generator.CleanOutputPath(generatedPath); err != nil {
+				return err
+			}
+		}
 		_, err = generator.NewGen(generator.Config{
 			Driver:      source.driver,
 			Source:      source.source,
 			SourceName:  source.name,
 			NamedSource: !source.legacy,
 			Table:       opts.Table,
-			BasePath:    basePath,
+			BasePath:    generatedPath,
 		}).Generate()
 		if err != nil {
 			generationErrors = append(generationErrors, fmt.Errorf("数据源%s生成失败: %w", source.name, err))
@@ -132,6 +139,27 @@ func loadConfigSources(filename string, selectedName string) ([]configSource, er
 			}
 			return nil, fmt.Errorf("数据库数据源不存在: %s", selectedName)
 		}
+		// 连接配置借用 default，但生成目录和运行时查找名称仍使用传入的数据源名称。
+		source.name = selectedName
+		source.legacy = false
+	}
+	source.directory, err = normalizeSourceDirectory(source.name)
+	if err != nil {
+		return nil, err
 	}
 	return []configSource{source}, nil
+}
+
+// normalizeSourceDirectory 将数据源名称转换为安全且稳定的输出目录名。
+func normalizeSourceDirectory(name string) (string, error) {
+	var builder strings.Builder
+	for _, character := range strings.ToLower(name) {
+		if unicode.IsLetter(character) || unicode.IsDigit(character) {
+			builder.WriteRune(character)
+		}
+	}
+	if builder.Len() == 0 {
+		return "", fmt.Errorf("数据源名称无法生成目录: %s", name)
+	}
+	return builder.String(), nil
 }

@@ -35,6 +35,7 @@ type dataTemplateContext struct {
 	ModelImportPath string
 	QueryImportPath string
 	SourceName      string
+	GormClientType  string
 	NamedSource     bool
 	Tables          []tableMeta
 }
@@ -312,6 +313,7 @@ func buildDataTemplateContext(dataDir string, opts options, tables []tableMeta) 
 		ModelImportPath: buildImportPath(modulePath, opts.modelPkgPath),
 		QueryImportPath: buildImportPath(modulePath, opts.outPath),
 		SourceName:      opts.sourceName,
+		GormClientType:  buildGormClientTypeName(opts.sourceName),
 		NamedSource:     opts.namedSource,
 		Tables:          tables,
 	}, nil

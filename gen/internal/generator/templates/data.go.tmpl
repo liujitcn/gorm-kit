@@ -18,9 +18,16 @@ func Models() []interface{} {
 	}
 }
 
+{{- if .NamedSource }}
+// {{ .GormClientType }} 区分当前数据源的 GORM 客户端类型。
+type {{ .GormClientType }} struct {
+	*databaseGorm.Client
+}
+{{- end }}
+
 // NewClient 创建绑定当前数据源模型范围的 GORM 客户端。
 {{- if .NamedSource }}
-func NewClient(databases map[string]*configv1.Data_Database) (*databaseGorm.Client, func(), error) {
+func NewClient(databases map[string]*configv1.Data_Database) (*{{ .GormClientType }}, func(), error) {
 	{{- if eq .SourceName "default" }}
 	database := databases["default"]
 	{{- else }}
@@ -30,11 +37,15 @@ func NewClient(databases map[string]*configv1.Data_Database) (*databaseGorm.Clie
 		database = databases["default"]
 	}
 	{{- end }}
-	return databaseGorm.NewGormClient(
+	client, cleanup, err := databaseGorm.NewGormClient(
 		database,
 		databaseGorm.WithName({{ printf "%q" .SourceName }}),
 		databaseGorm.WithMigrateModels(Models()...),
 	)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &{{ .GormClientType }}{Client: client}, cleanup, nil
 }
 {{- else }}
 func NewClient(cfg *configv1.Data_Database) (*databaseGorm.Client, func(), error) {
@@ -55,7 +66,11 @@ type Data struct {
 }
 
 // NewData 初始化数据访问对象，并构建默认查询入口。
+{{- if .NamedSource }}
+func NewData(c *{{ .GormClientType }}) *Data {
+	{{- else }}
 func NewData(c *databaseGorm.Client) *Data {
+	{{- end }}
 	d := &Data{
 		query: {{ .QueryPackage }}.Use(c.DB),
 	}

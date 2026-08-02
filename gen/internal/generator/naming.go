@@ -16,6 +16,21 @@ func buildRepositoryName(tableName string) string {
 	return buildCamelName(tableName)
 }
 
+// buildGormClientTypeName 将数据源名称转换为独立的 GORM 客户端类型名。
+func buildGormClientTypeName(sourceName string) string {
+	name := stringcase.ToGoCamelCase(sourceName)
+	if name == "" {
+		name = "source"
+	}
+	first := []rune(name)[0]
+	if !unicode.IsLetter(first) {
+		name = "source" + buildCamelName(name)
+	}
+	runes := []rune(name)
+	runes[0] = unicode.ToUpper(runes[0])
+	return string(runes) + "GormClient"
+}
+
 // buildCamelName 将下划线名称转换为驼峰名称，并按 Go 习惯保留常见缩写。
 func buildCamelName(name string) string {
 	return stringcase.ToGoPascalCase(name)

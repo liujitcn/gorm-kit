@@ -22,6 +22,10 @@ func Models() []interface{} {
 {{- if .NamedSource }}
 func NewClient(databases map[string]*configv1.Data_Database) (*databaseGorm.Client, func(), error) {
 	database := databases[{{ printf "%q" .SourceName }}]
+	if database == nil {
+		// 当前数据源未配置时回退到默认数据源，保留当前目录对应的迁移模型和名称。
+		database = databases["default"]
+	}
 	return databaseGorm.NewGormClient(
 		database,
 		databaseGorm.WithName({{ printf "%q" .SourceName }}),

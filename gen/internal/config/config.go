@@ -124,10 +124,14 @@ func loadConfigSources(filename string, selectedName string) ([]configSource, er
 	}
 	source, exists := sources[selectedName]
 	if !exists {
-		if selectedName == "default" {
-			return nil, errors.New("未配置默认数据库数据源，请通过 database 参数指定数据源")
+		// 传入的数据源名称不存在时回退到默认数据源，兼容不同环境下可选的数据源配置。
+		source, exists = sources["default"]
+		if !exists {
+			if selectedName == "default" {
+				return nil, errors.New("未配置默认数据库数据源，请通过 database 参数指定数据源")
+			}
+			return nil, fmt.Errorf("数据库数据源不存在: %s", selectedName)
 		}
-		return nil, fmt.Errorf("数据库数据源不存在: %s", selectedName)
 	}
 	return []configSource{source}, nil
 }

@@ -34,7 +34,7 @@ func buildUsage() {
 	_, _ = fmt.Fprintf(flag.CommandLine.Output(), "  %s [-config=./configs/data.yaml] [参数]\n\n", os.Args[0])
 	flag.PrintDefaults()
 	_, _ = fmt.Fprintf(flag.CommandLine.Output(), "\n说明:\n")
-	_, _ = fmt.Fprintln(flag.CommandLine.Output(), "  未传 database 时使用默认数据源；传入 database 时使用对应命名数据源。")
+	_, _ = fmt.Fprintln(flag.CommandLine.Output(), "  未传 database 时使用默认数据源；传入不存在的数据源时回退到默认数据源。")
 	_, _ = fmt.Fprintln(flag.CommandLine.Output(), "  table 支持 user,user2；未传 database 时同样使用默认数据源。")
 	_, _ = fmt.Fprintln(flag.CommandLine.Output(), "  所有数据源都输出到 base_path，可用 base_path 覆盖默认 gen。")
 }

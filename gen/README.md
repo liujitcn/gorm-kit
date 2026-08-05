@@ -16,7 +16,7 @@ go run ./cmd/gorm-gen -h
 go run ./cmd/gorm-gen
 ```
 
-仓库内的 [`configs/data.yaml`](configs/data.yaml) 是默认配置模板，使用 SQLite 的 `configs/example.db` 作为示例路径；实际项目中将该文件替换为服务自己的数据库配置即可。
+仓库内的 [`configs/data.yaml`](configs/data.yaml) 是默认配置模板，实际项目中可直接替换为服务自己的数据库配置。
 
 配置文件直接复用服务的 `data.yaml`，只读取 `data.database` 和 `data.databases`：
 

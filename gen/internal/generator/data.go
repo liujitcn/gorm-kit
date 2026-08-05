@@ -261,11 +261,13 @@ func generateDataLayer(dataDir string, ctx dataTemplateContext, generatedTables 
 			PackageName     string
 			ModelPackage    string
 			ModelImportPath string
+			QueryImportPath string
 			Table           tableMeta
 		}{
 			PackageName:     ctx.PackageName,
 			ModelPackage:    ctx.ModelPackage,
 			ModelImportPath: ctx.ModelImportPath,
+			QueryImportPath: ctx.QueryImportPath,
 			Table:           table,
 		}); err != nil {
 			return err

@@ -66,7 +66,7 @@ userRepository := repository.NewBaseRepository(
 - `table` 支持逗号分隔的多表，例如 `user,user2`
 - 默认数据源输出到 `base_path`，命名数据源输出到 `base_path/<数据源>`
 - 全量生成只清理目标数据源目录下的 `query`、`data`、`repo`，保留 `models` 和其他目录
-- 每套 `data` 生成 `Models()`、`NewClient()`、`NewData()`、不含客户端的 `RepositoryProviderSet` 与完整的 `ProviderSet`
+- 每套 `data` 生成 `Models()`、`NewClient()`、`NewData()`、不含客户端的 `RepositoryProviderSet` 与完整的 `ProviderSet`；命名数据源额外导出客户端名称常量和独立客户端类型
 - 默认数据源的 `NewClient` 接收单个 `*configv1.Data_Database`；命名数据源的 `NewClient` 接收 `databases map[string]*configv1.Data_Database`，优先按当前目录对应的数据源名称取配置，不存在时回退到 `default`
 - 命令行只负责选择配置、数据源、表和生成根目录，连接与驱动统一从服务配置读取
 - 生成模板拆分在 `gen/internal/generator/templates/*.tmpl`，并通过 `go:embed` 嵌入生成器

@@ -19,6 +19,9 @@ func Models() []interface{} {
 }
 
 {{- if .NamedSource }}
+// {{ .GormClientType }}Name 表示当前 GORM 客户端名称。
+const {{ .GormClientType }}Name = {{ if eq .SourceName "default" }}databaseGorm.DefaultClientName{{ else }}{{ printf "%q" .SourceName }}{{ end }}
+
 // {{ .GormClientType }} 区分当前数据源的 GORM 客户端类型。
 type {{ .GormClientType }} struct {
 	*databaseGorm.Client
@@ -29,9 +32,9 @@ type {{ .GormClientType }} struct {
 {{- if .NamedSource }}
 func NewClient(databases map[string]*configv1.Data_Database) (*{{ .GormClientType }}, func(), error) {
 	{{- if eq .SourceName "default" }}
-	database := databases[databaseGorm.DefaultClientName]
+	database := databases[{{ .GormClientType }}Name]
 	{{- else }}
-	database, ok := databases[{{ printf "%q" .SourceName }}]
+	database, ok := databases[{{ .GormClientType }}Name]
 	if !ok {
 		// 当前数据源未配置时回退到默认数据源，保留当前目录对应的迁移模型和名称。
 		database = databases[databaseGorm.DefaultClientName]
@@ -39,11 +42,7 @@ func NewClient(databases map[string]*configv1.Data_Database) (*{{ .GormClientTyp
 	{{- end }}
 	client, cleanup, err := databaseGorm.NewGormClient(
 		database,
-	{{- if eq .SourceName "default" }}
-		databaseGorm.WithName(databaseGorm.DefaultClientName),
-	{{- else }}
-		databaseGorm.WithName({{ printf "%q" .SourceName }}),
-	{{- end }}
+		databaseGorm.WithName({{ .GormClientType }}Name),
 		databaseGorm.WithMigrateModels(Models()...),
 	)
 	if err != nil {

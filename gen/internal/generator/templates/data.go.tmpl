@@ -51,14 +51,10 @@ func NewClient(databases map[string]*configv1.Data_Database) (*{{ .GormClientTyp
 	return &{{ .GormClientType }}{Client: client}, cleanup, nil
 }
 {{- else }}
-func NewClient(cfg *configv1.Data_Database) (*databaseGorm.Client, func(), error) {
+func NewClient(databases map[string]*configv1.Data_Database) (*databaseGorm.Client, func(), error) {
 	return databaseGorm.NewGormClient(
-		cfg,
-		{{- if eq .SourceName "default" }}
+		databases[databaseGorm.DefaultClientName],
 		databaseGorm.WithName(databaseGorm.DefaultClientName),
-		{{- else }}
-		databaseGorm.WithName({{ printf "%q" .SourceName }}),
-		{{- end }}
 		databaseGorm.WithMigrateModels(Models()...),
 	)
 }

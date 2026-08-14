@@ -2,8 +2,8 @@ package {{ .PackageName }}
 
 import (
 	"context"
+	"errors"
 
-	configv1 "github.com/liujitcn/kratos-kit/api/gen/go/config/v1"
 	databaseGorm "github.com/liujitcn/kratos-kit/database/gorm"
 	"{{ .ModelImportPath }}"
 	"{{ .QueryImportPath }}"
@@ -22,42 +22,6 @@ func Models() []interface{} {
 // {{ .GormClientType }}Name 表示当前 GORM 客户端名称。
 const {{ .GormClientType }}Name = {{ if eq .SourceName "default" }}databaseGorm.DefaultClientName{{ else }}{{ printf "%q" .SourceName }}{{ end }}
 
-// {{ .GormClientType }} 区分当前数据源的 GORM 客户端类型。
-type {{ .GormClientType }} struct {
-	*databaseGorm.Client
-}
-{{- end }}
-
-// NewClient 创建绑定当前数据源模型范围的 GORM 客户端。
-{{- if .NamedSource }}
-func NewClient(databases map[string]*configv1.Data_Database) (*{{ .GormClientType }}, func(), error) {
-	{{- if eq .SourceName "default" }}
-	database := databases[{{ .GormClientType }}Name]
-	{{- else }}
-	database, ok := databases[{{ .GormClientType }}Name]
-	if !ok {
-		// 当前数据源未配置时回退到默认数据源，保留当前目录对应的迁移模型和名称。
-		database = databases[databaseGorm.DefaultClientName]
-	}
-	{{- end }}
-	client, cleanup, err := databaseGorm.NewGormClient(
-		database,
-		databaseGorm.WithName({{ .GormClientType }}Name),
-		databaseGorm.WithMigrateModels(Models()...),
-	)
-	if err != nil {
-		return nil, nil, err
-	}
-	return &{{ .GormClientType }}{Client: client}, cleanup, nil
-}
-{{- else }}
-func NewClient(databases map[string]*configv1.Data_Database) (*databaseGorm.Client, func(), error) {
-	return databaseGorm.NewGormClient(
-		databases[databaseGorm.DefaultClientName],
-		databaseGorm.WithName(databaseGorm.DefaultClientName),
-		databaseGorm.WithMigrateModels(Models()...),
-	)
-}
 {{- end }}
 
 type contextTxKey struct{}
@@ -75,15 +39,25 @@ type Data struct {
 }
 
 // NewData 初始化数据访问对象，并构建默认查询入口。
-{{- if .NamedSource }}
-func NewData(c *{{ .GormClientType }}) *Data {
-	{{- else }}
-func NewData(c *databaseGorm.Client) *Data {
+func NewData(databases map[string]*databaseGorm.Client) (*Data, error) {
+	if len(databases) == 0 {
+		return nil, errors.New("数据库客户端映射不能为空")
+	}
+	defaultClient, ok := databases[databaseGorm.DefaultClientName]
+	if !ok || defaultClient == nil || defaultClient.DB == nil {
+		return nil, errors.New("默认数据库客户端不存在")
+	}
+	client := defaultClient
+	{{- if .NamedSource }}
+	// 当前数据源客户端未配置时回退到默认客户端，兼容复用默认连接的场景。
+	if namedClient, exists := databases[{{ .GormClientType }}Name]; exists && namedClient != nil && namedClient.DB != nil {
+		client = namedClient
+	}
 	{{- end }}
 	d := &Data{
-		query: {{ .QueryPackage }}.Use(c.DB),
+		query: {{ .QueryPackage }}.Use(client.DB),
 	}
-	return d
+	return d, nil
 }
 
 // Transaction 定义事务执行能力，便于业务层按接口依赖。

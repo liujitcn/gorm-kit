@@ -66,8 +66,8 @@ userRepository := repository.NewBaseRepository(
 - `table` 支持逗号分隔的多表，例如 `user,user2`
 - 默认数据源输出到 `base_path`，命名数据源输出到 `base_path/<数据源>`
 - 全量生成只清理目标数据源目录下的 `query`、`data`、`repo`，保留 `models` 和其他目录
-- 每套 `data` 生成 `Models()`、`NewClient()`、`NewData()`、不含客户端的 `RepositoryProviderSet` 与完整的 `ProviderSet`；命名数据源额外导出客户端名称常量和独立客户端类型
-- 默认数据源和命名数据源的 `NewClient` 均接收 `databases map[string]*configv1.Data_Database`；默认数据源通过 `databaseGorm.DefaultClientName` 取配置，命名数据源优先按当前目录对应的数据源名称取配置，不存在时回退到默认数据源
+- 每套 `data` 生成 `Models()`、`NewData(databases map[string]*databaseGorm.Client)` 和包含仓储依赖的 `ProviderSet`；`NewData` 在客户端 map 为空或缺少默认客户端时返回错误，命名数据源额外导出客户端名称常量
+- 数据库客户端由外部统一创建并以 map 传入 `NewData`；默认数据源使用 `databaseGorm.DefaultClientName`，命名数据源使用生成的客户端名称常量选择对应客户端
 - 命令行只负责选择配置、数据源、表和生成根目录，连接与驱动统一从服务配置读取
 - 生成模板拆分在 `gen/internal/generator/templates/*.tmpl`，并通过 `go:embed` 嵌入生成器
 - 生成模型、Repository 与字段名称时保留统一缩写表全大写，包含 GORM 内置缩写以及 `SKU`、`SPU`、`LLM` 等业务扩展缩写

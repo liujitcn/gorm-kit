@@ -56,8 +56,8 @@ gen/main/{models,query,data}
 - 默认生成数据源全部表；指定 `table` 时先校验全部表，任一表不存在则当前数据源生成失败。
 - 全量生成只清理目标数据源目录下的 `query`、`data`、`repo` 目录，`models` 和其他目录保持不变；指定表时不清理目录。
 - 指定表时保留其他表产物，只更新指定表并重建聚合入口。
-- 每套 `data` 包生成 `Models()`、`NewClient()`、`NewData()`、不含客户端的 `RepositoryProviderSet` 和完整的 `ProviderSet`，迁移模型只绑定当前数据源；命名数据源额外按数据源导出独立的客户端名称常量和客户端类型。
-- 默认数据源和命名数据源的 `NewClient` 均接收 `databases map[string]*configv1.Data_Database`；默认数据源通过 `databaseGorm.DefaultClientName` 取配置，命名数据源优先按当前目录对应的数据源名称取配置，不存在时回退到默认数据源，迁移模型和客户端名称仍保留当前数据源名称。
+- 每套 `data` 包生成 `Models()`、`NewData(databases map[string]*databaseGorm.Client)` 和包含仓储依赖的 `ProviderSet`，迁移模型只绑定当前数据源；`NewData` 在客户端 map 为空或缺少默认客户端时返回错误，命名数据源额外按数据源导出独立的客户端名称常量。
+- 数据库客户端由外部统一创建并以 map 传入 `NewData`；默认数据源使用 `databaseGorm.DefaultClientName`，命名数据源使用生成的客户端名称常量选择对应客户端。
 - Doris 使用 `information_schema` 读取字段元数据，避免默认采样查询追加 Doris 不兼容的 `LIMIT`。
 - 模型、Repository 与字段名称沿用 `go-utils/stringcase` 的缩写规则；`BIGINT deleted_at` 保留 `soft_delete.DeletedAt` 生成策略。
 

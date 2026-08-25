@@ -1,8 +1,23 @@
 # 运行要求：Linux/macOS，或 Windows 下使用 WSL/Git Bash（需具备 make、python3、go）
-.PHONY: help fmt tag
+.PHONY: help init plugin cli fmt tag
+
+# 初始化开发环境
+init: plugin cli
+
+# 安装 GORM 代码生成插件
+plugin:
+	@cd gen && go install ./cmd/gorm-gen
+
+# 安装日常开发命令行工具
+cli:
+	@go install golang.org/x/tools/cmd/goimports@latest
+	@go install github.com/liujitcn/kratos-kit/cmd/normalize-go-imports@latest
 
 # 使用 goimports 统一整理 Go 代码的 import 与格式
 fmt:
+	@normalize_bin="$$(go env GOBIN)"; \
+	if [ -z "$$normalize_bin" ]; then normalize_bin="$$(go env GOPATH)/bin"; fi; \
+	"$$normalize_bin/normalize-go-imports" -root . -write
 	@goimports -w $$(rg --files -g '*.go')
 
 # 统一打 tag：默认扫描根目录及子目录的 go.mod；可通过 MODULE=auth 指定起始目录递归扫描（不提交代码）

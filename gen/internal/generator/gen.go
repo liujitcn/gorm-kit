@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/liujitcn/kratos-kit/database/gorm/driver"
-	gormgen "gorm.io/gen"
+	"gorm.io/gen"
 	"gorm.io/gorm"
 )
 
@@ -25,7 +25,7 @@ const (
 type Gen struct {
 	opts          options
 	db            *gorm.DB
-	gormGenerator *gormgen.Generator
+	gormGenerator *gen.Generator
 }
 
 // NewGen 创建生成器实例。
@@ -105,7 +105,7 @@ func loadGeneratedTableMetas(modelPath string, queryPath string) ([]tableMeta, e
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".gen.go") || entry.Name() == "table_comment.gen.go" || entry.Name() == "table_name.gen.go" {
 			continue
 		}
-		tableName := strings.TrimSuffix(entry.Name(), ".gen.go")
+		tableName, _, _ := strings.CutLast(entry.Name(), ".gen.go")
 		queryFile := filepath.Join(queryDir, entry.Name())
 		if _, err = os.Stat(queryFile); err != nil {
 			return nil, fmt.Errorf("模型%s缺少对应查询文件: %w", tableName, err)
@@ -142,7 +142,7 @@ func writeGeneratedQueryFile(queryPath string, tables []tableMeta) error {
 }
 
 // generateTableModels 根据 table 配置生成单张表或当前数据库全部表的模型元数据。
-func (g *Gen) generateTableModels(generator *gormgen.Generator) ([]interface{}, error) {
+func (g *Gen) generateTableModels(generator *gen.Generator) ([]interface{}, error) {
 	if g.opts.table != "" {
 		tableNames, err := parseTableNames(g.opts.table)
 		if err != nil {
@@ -199,7 +199,7 @@ func parseTableNames(value string) ([]string, error) {
 }
 
 // newGenerator 按当前配置初始化 gorm/gen 生成器。
-func (g *Gen) newGenerator() (*gormgen.Generator, error) {
+func (g *Gen) newGenerator() (*gen.Generator, error) {
 	opts := g.opts
 	// 1. 根据 driver 名称加载 gorm dialector 构造器。
 	gormDriver, ok := driver.Opens[opts.driver]
@@ -215,7 +215,7 @@ func (g *Gen) newGenerator() (*gormgen.Generator, error) {
 	g.db = db
 
 	// 3. 初始化生成器并写入基础配置。
-	generator := gormgen.NewGenerator(gormgen.Config{
+	generator := gen.NewGenerator(gen.Config{
 		OutPath:           opts.outPath,
 		ModelPkgPath:      opts.modelPkgPath,
 		FieldNullable:     false,
@@ -244,7 +244,7 @@ func (g *Gen) buildTableToModelNameStrategy() func(tableName string) string {
 }
 
 // generateAllTable 使用统一命名选项导出当前数据库全部表。
-func (g *Gen) generateAllTable(generator *gormgen.Generator) []interface{} {
+func (g *Gen) generateAllTable(generator *gen.Generator) []interface{} {
 	if g.opts.driver == "doris" {
 		return g.generateAllDorisTables()
 	}
@@ -252,16 +252,16 @@ func (g *Gen) generateAllTable(generator *gormgen.Generator) []interface{} {
 }
 
 // buildModelOpts 汇总模型生成选项，包含字段命名策略与软删除字段映射。
-func (g *Gen) buildModelOpts() []gormgen.ModelOpt {
-	return []gormgen.ModelOpt{
+func (g *Gen) buildModelOpts() []gen.ModelOpt {
+	return []gen.ModelOpt{
 		g.buildFieldNameStrategy(),
 		g.buildSoftDeleteStrategy(),
 	}
 }
 
 // buildFieldNameStrategy 构建“字段列名 -> 模型字段名”转换策略。
-func (g *Gen) buildFieldNameStrategy() gormgen.ModelOpt {
-	return gormgen.FieldModify(func(field gormgen.Field) gormgen.Field {
+func (g *Gen) buildFieldNameStrategy() gen.ModelOpt {
+	return gen.FieldModify(func(field gen.Field) gen.Field {
 		if field == nil || field.ColumnName == "" {
 			return field
 		}
@@ -272,8 +272,8 @@ func (g *Gen) buildFieldNameStrategy() gormgen.ModelOpt {
 }
 
 // buildSoftDeleteStrategy 将整数型 deleted_at 列映射为 soft_delete.DeletedAt，保留软删除语义并支持联合唯一索引复用编号。
-func (g *Gen) buildSoftDeleteStrategy() gormgen.ModelOpt {
-	return gormgen.FieldModify(func(field gormgen.Field) gormgen.Field {
+func (g *Gen) buildSoftDeleteStrategy() gen.ModelOpt {
+	return gen.FieldModify(func(field gen.Field) gen.Field {
 		if field == nil || field.ColumnName != softDeleteColumnName {
 			return field
 		}

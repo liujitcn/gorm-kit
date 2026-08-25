@@ -12,7 +12,20 @@
 
 ## 工具链与测试
 
+本仓库要求 Go 1.27.0 或更高版本，根目录与 `gen` 目录是相互独立的 Go module，需分别执行测试。
+
 格式化依赖 `goimports`，执行 `make fmt` 前需先确保本机已安装 `goimports`。
+
+初始化开发环境执行 `make init`，会安装 `gorm-gen` 生成插件和 `goimports` 命令。
+
+Go import 别名规范化命令由 `kratos-kit` 提供，可在本仓库预览或写回结果：
+
+```bash
+make cli
+make fmt
+```
+
+`make cli` 会安装规范化命令，`make fmt` 再运行规范化命令并执行 `goimports`。
 
 本仓库包含根目录与 `gen` 两个 Go module，提交前需分别执行测试：
 

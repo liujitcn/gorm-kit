@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -68,7 +68,7 @@ func collectCleanupDirs(targets ...cleanupTarget) ([]string, error) {
 		seen[dir] = struct{}{}
 		dirs = append(dirs, dir)
 	}
-	sort.Strings(dirs)
+	slices.Sort(dirs)
 	return dirs, nil
 }
 

@@ -27,7 +27,7 @@ func calcAutoBatchSize[T any](list []*T) int {
 
 	columnCount := estimateInsertColumnCount[T]()
 	if columnCount <= 0 {
-		return minInt(len(list), defaultFallbackBatchSize)
+		return min(len(list), defaultFallbackBatchSize)
 	}
 
 	size := defaultMaxSQLVars / columnCount
@@ -72,8 +72,7 @@ func estimateInsertColumnCount[T any]() int {
 // countInsertFieldsByGormTag 统计可写入的 gorm 标记字段数（递归展开匿名结构体）。
 func countInsertFieldsByGormTag(t reflect.Type) int {
 	count := 0
-	for i := 0; i < t.NumField(); i++ {
-		sf := t.Field(i)
+	for sf := range t.Fields() {
 		if sf.Anonymous {
 			et := sf.Type
 			if et.Kind() == reflect.Ptr {
@@ -103,8 +102,7 @@ func countInsertFieldsByGormTag(t reflect.Type) int {
 // countExportedInsertFields 在缺少 gorm tag 时，按导出字段数量做保守估算。
 func countExportedInsertFields(t reflect.Type) int {
 	count := 0
-	for i := 0; i < t.NumField(); i++ {
-		sf := t.Field(i)
+	for sf := range t.Fields() {
 		if sf.Anonymous {
 			et := sf.Type
 			if et.Kind() == reflect.Ptr {
@@ -120,12 +118,4 @@ func countExportedInsertFields(t reflect.Type) int {
 		}
 	}
 	return count
-}
-
-// minInt 返回两个整数中的较小值。
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

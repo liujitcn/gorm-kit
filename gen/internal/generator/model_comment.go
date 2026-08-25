@@ -9,7 +9,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -130,8 +130,8 @@ func mergeModelComments(existingComments []modelCommentMeta, tableModels []inter
 	for modelName, tableComment := range commentMap {
 		comments = append(comments, modelCommentMeta{ModelName: modelName, TableComment: tableComment})
 	}
-	sort.Slice(comments, func(i, j int) bool {
-		return comments[i].ModelName < comments[j].ModelName
+	slices.SortFunc(comments, func(a, b modelCommentMeta) int {
+		return strings.Compare(a.ModelName, b.ModelName)
 	})
 	return comments, nil
 }
@@ -149,8 +149,8 @@ func loadModelComments(tableModels []interface{}) ([]modelCommentMeta, error) {
 		}
 		comments = append(comments, comment)
 	}
-	sort.Slice(comments, func(i, j int) bool {
-		return comments[i].ModelName < comments[j].ModelName
+	slices.SortFunc(comments, func(a, b modelCommentMeta) int {
+		return strings.Compare(a.ModelName, b.ModelName)
 	})
 	return comments, nil
 }

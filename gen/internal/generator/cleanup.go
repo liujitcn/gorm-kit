@@ -13,7 +13,7 @@ type cleanupTarget struct {
 	path  string
 }
 
-// CleanOutputPath 只清理输出根目录中的 query、data、repo 目录。
+// CleanOutputPath 清理输出根目录中由生成器完整重建的目录。
 func CleanOutputPath(path string) error {
 	dir, err := resolveGeneratedPath("output", path)
 	if err != nil {
@@ -21,8 +21,8 @@ func CleanOutputPath(path string) error {
 	}
 	return cleanupTargets(
 		cleanupTarget{label: "query", path: filepath.Join(dir, defaultOutPath)},
+		cleanupTarget{label: "models", path: filepath.Join(dir, defaultModelPkgPath)},
 		cleanupTarget{label: "data", path: filepath.Join(dir, defaultDataPath)},
-		cleanupTarget{label: "repo", path: filepath.Join(dir, defaultRepoPath)},
 	)
 }
 
@@ -40,7 +40,7 @@ func cleanupTargets(targets ...cleanupTarget) error {
 	return nil
 }
 
-// cleanupGeneratedDirs 只清理生成器负责重建的 query、data、repo 目录。
+// cleanupGeneratedDirs 清理生成器负责完整重建的输出目录。
 func (g *Gen) cleanupGeneratedDirs() error {
 	if g.opts.table != "" {
 		// 单表模式必须保留其他表产物，只允许覆盖当前表对应文件和聚合入口。
@@ -48,8 +48,8 @@ func (g *Gen) cleanupGeneratedDirs() error {
 	}
 	return cleanupTargets(
 		cleanupTarget{label: "query", path: g.opts.outPath},
+		cleanupTarget{label: "models", path: g.opts.modelPkgPath},
 		cleanupTarget{label: "data", path: g.opts.dataPath},
-		cleanupTarget{label: "repo", path: g.opts.repoPath},
 	)
 }
 
@@ -57,8 +57,10 @@ func (g *Gen) cleanupGeneratedDirs() error {
 func collectCleanupDirs(targets ...cleanupTarget) ([]string, error) {
 	dirs := make([]string, 0, len(targets))
 	seen := make(map[string]struct{}, len(targets))
+	var err error
 	for _, target := range targets {
-		dir, err := resolveGeneratedPath(target.label, target.path)
+		var dir string
+		dir, err = resolveGeneratedPath(target.label, target.path)
 		if err != nil {
 			return nil, err
 		}

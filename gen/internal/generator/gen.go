@@ -69,7 +69,7 @@ func (g *Gen) Generate() ([]interface{}, error) {
 	if err = generateModelCommentFile(g.opts, tableModels); err != nil {
 		return nil, err
 	}
-	if err = generateDataFiles(g.opts, tableModels); err != nil {
+	if err = generateDataFiles(g.db, g.opts, tableModels); err != nil {
 		return nil, err
 	}
 	return tableModels, nil

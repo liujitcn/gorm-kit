@@ -13,7 +13,9 @@ import (
 func Models() []interface{} {
 	return []interface{}{
 {{- range .Tables }}
+{{- if not .IsView }}
 		new({{ $.ModelPackage }}.{{ .ModelName }}),
+{{- end }}
 {{- end }}
 	}
 }

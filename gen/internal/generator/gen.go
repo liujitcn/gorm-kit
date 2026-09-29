@@ -156,7 +156,11 @@ func (g *Gen) generateTableModels(generator *gen.Generator) ([]interface{}, erro
 				if g.opts.driver == "doris" {
 					return g.generateDorisModel(tableName)
 				}
-				return generator.GenerateModel(tableName, g.buildModelOpts()...)
+				model := generator.GenerateModel(tableName, g.buildModelOpts()...)
+				if g.opts.driver == "postgres" {
+					g.applyPostgresTableComment(tableName, model)
+				}
+				return model
 			})
 			if err != nil {
 				return nil, err
@@ -248,7 +252,13 @@ func (g *Gen) generateAllTable(generator *gen.Generator) []interface{} {
 	if g.opts.driver == "doris" {
 		return g.generateAllDorisTables()
 	}
-	return generator.GenerateAllTable(g.buildModelOpts()...)
+	tableModels := generator.GenerateAllTable(g.buildModelOpts()...)
+	if g.opts.driver == "postgres" {
+		for _, tableModel := range tableModels {
+			g.applyPostgresTableComment(postgresModelTableName(tableModel), tableModel)
+		}
+	}
+	return tableModels
 }
 
 // buildModelOpts 汇总模型生成选项，包含字段命名策略与软删除字段映射。

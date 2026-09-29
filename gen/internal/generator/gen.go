@@ -293,6 +293,13 @@ func (g *Gen) buildSoftDeleteStrategy() gen.ModelOpt {
 			field.Type = softDeleteFieldType
 			// softDelete:milli 表示删除时写入毫秒时间戳，0 表示未删除。
 			field.GORMTag = field.GORMTag.Set("softDelete", "milli")
+			if g.opts.driver == "postgres" {
+				// PostgreSQL 不支持 unsigned 修饰符；源库残留 MySQL 风格类型时按有符号 bigint 生成。
+				types := field.GORMTag["type"]
+				for i, value := range types {
+					types[i] = strings.TrimSuffix(value, " unsigned")
+				}
+			}
 		}
 		return field
 	})

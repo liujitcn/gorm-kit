@@ -4,13 +4,13 @@ go 1.27.0
 
 require (
 	github.com/liujitcn/go-utils v0.0.41
-	github.com/liujitcn/kratos-kit/database/gorm/driver v0.0.20
-	github.com/liujitcn/kratos-kit/database/gorm/driver/bigquery v0.0.18
-	github.com/liujitcn/kratos-kit/database/gorm/driver/mysql v0.0.23
-	github.com/liujitcn/kratos-kit/database/gorm/driver/oracle v0.0.19
-	github.com/liujitcn/kratos-kit/database/gorm/driver/postgres v0.0.19
-	github.com/liujitcn/kratos-kit/database/gorm/driver/sqlite v0.0.18
-	github.com/liujitcn/kratos-kit/database/gorm/driver/sqlserver v0.0.19
+	github.com/liujitcn/kratos-kit/database/gorm/driver v0.0.21
+	github.com/liujitcn/kratos-kit/database/gorm/driver/bigquery v0.0.19
+	github.com/liujitcn/kratos-kit/database/gorm/driver/mysql v0.0.24
+	github.com/liujitcn/kratos-kit/database/gorm/driver/oracle v0.0.20
+	github.com/liujitcn/kratos-kit/database/gorm/driver/postgres v0.0.20
+	github.com/liujitcn/kratos-kit/database/gorm/driver/sqlite v0.0.19
+	github.com/liujitcn/kratos-kit/database/gorm/driver/sqlserver v0.0.20
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/gen v0.3.27
 	gorm.io/gorm v1.31.2

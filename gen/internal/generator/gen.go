@@ -26,6 +26,8 @@ type Gen struct {
 	opts          options
 	db            *gorm.DB
 	gormGenerator *gen.Generator
+	// binarySizes 记录 PostgreSQL 源库中由长度检查约束承载的二进制列长度，用于找回 size 标签。
+	binarySizes map[string]map[string]int
 }
 
 // NewGen 创建生成器实例。
@@ -217,6 +219,12 @@ func (g *Gen) newGenerator() (*gen.Generator, error) {
 		return nil, err
 	}
 	g.db = db
+	// PostgreSQL 的 bytea 列长度由 gormsize_ 前缀检查约束承载，生成前先收集。
+	if opts.driver == "postgres" {
+		if err = g.loadPostgresBinarySizes(); err != nil {
+			return nil, err
+		}
+	}
 
 	// 3. 初始化生成器并写入基础配置。
 	generator := gen.NewGenerator(gen.Config{
@@ -228,6 +236,13 @@ func (g *Gen) newGenerator() (*gen.Generator, error) {
 		FieldWithIndexTag: true,
 		FieldWithTypeTag:  true,
 		WithUnitTest:      false,
+	})
+	// PostgreSQL 源库 int2 按驱动扫描类型推断为 int16，与 MySQL 源库 smallint 产出的 int32
+	// 不一致，会导致同一模型在不同源库生成结果不同；统一映射为 int32 保证跨库生成一致。
+	// bytea 同理：扫描类型是 []uint8，统一映射为 MySQL 源库产出的 []byte。
+	generator.WithDataTypeMap(map[string]func(columnType gorm.ColumnType) (dataType string){
+		"int2":  func(columnType gorm.ColumnType) (dataType string) { return "int32" },
+		"bytea": func(columnType gorm.ColumnType) (dataType string) { return "[]byte" },
 	})
 	generator.UseDB(db)
 	// 使用固定的下划线转驼峰策略生成模型名。

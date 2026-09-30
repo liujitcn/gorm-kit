@@ -12,7 +12,7 @@ require (
 	github.com/liujitcn/kratos-kit/database/gorm/driver/sqlite v0.0.20
 	github.com/liujitcn/kratos-kit/database/gorm/driver/sqlserver v0.0.21
 	gopkg.in/yaml.v3 v3.0.1
-	gorm.io/gen v0.3.27
+	gorm.io/gen v0.3.29
 	gorm.io/gorm v1.31.2
 )
 
@@ -24,7 +24,6 @@ require (
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	cloud.google.com/go/iam v1.6.0 // indirect
 	filippo.io/edwards25519 v1.2.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.10.0 // indirect
 	github.com/apache/arrow/go/v15 v15.0.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
@@ -86,5 +85,5 @@ require (
 	gorm.io/driver/sqlite v1.6.0 // indirect
 	gorm.io/driver/sqlserver v1.6.3 // indirect
 	gorm.io/hints v1.1.0 // indirect
-	gorm.io/plugin/dbresolver v1.6.2 // indirect
+	gorm.io/plugin/dbresolver v1.5.3 // indirect
 )

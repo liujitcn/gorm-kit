@@ -261,11 +261,12 @@ func (g *Gen) generateAllTable(generator *gen.Generator) []interface{} {
 	return tableModels
 }
 
-// buildModelOpts 汇总模型生成选项，包含字段命名策略与软删除字段映射。
+// buildModelOpts 汇总模型生成选项，包含字段命名策略、软删除字段映射与字段类型归一化。
 func (g *Gen) buildModelOpts() []gen.ModelOpt {
 	return []gen.ModelOpt{
 		g.buildFieldNameStrategy(),
 		g.buildSoftDeleteStrategy(),
+		g.buildFieldTypeStrategy(),
 	}
 }
 

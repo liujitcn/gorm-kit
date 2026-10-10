@@ -30,6 +30,7 @@ type options struct {
 	sourceName   string
 	namedSource  bool
 	table        string
+	basePath     string
 	outPath      string
 	modelPkgPath string
 	dataPath     string
@@ -43,12 +44,17 @@ func buildOptions(config Config) options {
 	if config.SourceName == "" {
 		config.SourceName = defaultSourceName
 	}
+	basePath := config.BasePath
+	if basePath == "" {
+		basePath = "."
+	}
 	return options{
 		driver:       config.Driver,
 		source:       config.Source,
 		sourceName:   config.SourceName,
 		namedSource:  config.NamedSource,
 		table:        config.Table,
+		basePath:     basePath,
 		outPath:      filepath.Join(config.BasePath, defaultOutPath),
 		modelPkgPath: filepath.Join(config.BasePath, defaultModelPkgPath),
 		dataPath:     filepath.Join(config.BasePath, defaultDataPath),

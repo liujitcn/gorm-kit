@@ -9,6 +9,7 @@ import (
 	"gorm.io/gen"
 	"gorm.io/gen/field"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // BaseRepository 定义通用仓储能力。
@@ -68,10 +69,10 @@ func (b baseRepository[T]) BatchCreate(ctx context.Context, list []*T) error {
 // Delete 按查询条件删除记录。
 // 为避免误删全表，必须显式传入至少一个查询选项。
 func (b baseRepository[T]) Delete(ctx context.Context, opts ...QueryOption) error {
-	if err := validateRequiredQueryOptions(opts...); err != nil {
+	dao := ApplyQueryOptions(b.queryDAO(ctx), opts...)
+	if err := validateRequiredWhereClause(dao); err != nil {
 		return err
 	}
-	dao := ApplyQueryOptions(b.queryDAO(ctx), opts...)
 	res, err := dao.Delete()
 	if err != nil {
 		return err
@@ -88,7 +89,7 @@ func (b baseRepository[T]) DeleteByID(ctx context.Context, id int64) error {
 	if err != nil {
 		return err
 	}
-	// 删除语句执行成功但未命中记录时，仅记录告警，不视为错误。
+	// 删除语句未命中记录时按幂等操作返回成功。
 	if res.RowsAffected == 0 {
 		return nil
 	}
@@ -104,7 +105,7 @@ func (b baseRepository[T]) DeleteByIDs(ctx context.Context, ids []int64) error {
 	if err != nil {
 		return err
 	}
-	// 删除语句执行成功但未命中记录时，仅记录告警，不视为错误。
+	// 删除语句未命中记录时按幂等操作返回成功。
 	if res.RowsAffected == 0 {
 		return nil
 	}
@@ -117,15 +118,15 @@ func (b baseRepository[T]) Update(ctx context.Context, entity *T, opts ...QueryO
 	if entity == nil {
 		return errors.New("entity is nil")
 	}
-	if err := validateRequiredQueryOptions(opts...); err != nil {
+	dao := ApplyQueryOptions(b.queryDAO(ctx), opts...)
+	if err := validateRequiredWhereClause(dao); err != nil {
 		return err
 	}
-	dao := ApplyQueryOptions(b.queryDAO(ctx), opts...)
 	res, err := dao.Updates(entity)
 	if err != nil {
 		return err
 	}
-	// 更新语句执行成功但未命中记录时，仅记录告警，不视为错误。
+	// 更新语句未命中记录时按幂等操作返回成功。
 	if res.RowsAffected == 0 {
 		return nil
 	}
@@ -145,7 +146,7 @@ func (b baseRepository[T]) UpdateByID(ctx context.Context, entity *T) error {
 	if err != nil {
 		return err
 	}
-	// 更新语句执行成功但未命中记录时，仅记录告警，不视为错误。
+	// 更新语句未命中记录时按幂等操作返回成功。
 	if res.RowsAffected == 0 {
 		return nil
 	}
@@ -261,6 +262,23 @@ func PageDefault(page, size int64) (int64, int64) {
 		size = 10
 	}
 	return page, size
+}
+
+// validateRequiredWhereClause 校验写操作的 DAO 中至少包含一个实际 WHERE 条件。
+func validateRequiredWhereClause(dao gen.Dao) error {
+	queryDAO, ok := dao.(interface{ UnderlyingDB() *gorm.DB })
+	if !ok {
+		return errors.New("where condition is required")
+	}
+	whereClause, ok := queryDAO.UnderlyingDB().Statement.Clauses[clause.Where{}.Name()]
+	if !ok {
+		return errors.New("where condition is required")
+	}
+	where, ok := whereClause.Expression.(clause.Where)
+	if !ok || len(where.Exprs) == 0 {
+		return errors.New("where condition is required")
+	}
+	return nil
 }
 
 // validateRequiredQueryOptions 校验必须存在至少一个有效查询选项。

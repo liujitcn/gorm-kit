@@ -154,7 +154,7 @@ func (g *Gen) generateTableModels(generator *gen.Generator) ([]interface{}, erro
 		for _, tableName := range tableNames {
 			// 指定多张表时先全部读取成功，再进入文件写入阶段。
 			var tableModel interface{}
-			tableModel, err = generateTableModel(tableName, func() interface{} {
+			tableModel, err = generateTableModel(tableName, func() (interface{}, error) {
 				if g.opts.driver == "doris" {
 					return g.generateDorisModel(tableName)
 				}
@@ -162,7 +162,7 @@ func (g *Gen) generateTableModels(generator *gen.Generator) ([]interface{}, erro
 				if g.opts.driver == "postgres" {
 					g.applyPostgresTableComment(tableName, model)
 				}
-				return model
+				return model, nil
 			})
 			if err != nil {
 				return nil, err
@@ -171,7 +171,10 @@ func (g *Gen) generateTableModels(generator *gen.Generator) ([]interface{}, erro
 		}
 		return tableModels, nil
 	}
-	tableModels := g.generateAllTable(generator)
+	tableModels, err := g.generateAllTable(generator)
+	if err != nil {
+		return nil, err
+	}
 	if len(tableModels) == 0 {
 		return nil, fmt.Errorf("数据源%s未发现可生成的表", g.opts.sourceName)
 	}
@@ -179,13 +182,13 @@ func (g *Gen) generateTableModels(generator *gen.Generator) ([]interface{}, erro
 }
 
 // generateTableModel 将 gorm/gen 的单表生成 panic 转换为可由调用链处理的错误。
-func generateTableModel(tableName string, generate func() interface{}) (tableModel interface{}, err error) {
+func generateTableModel(tableName string, generate func() (interface{}, error)) (tableModel interface{}, err error) {
 	defer func() {
 		if recovered := recover(); recovered != nil {
 			err = fmt.Errorf("生成表%q失败: %v", tableName, recovered)
 		}
 	}()
-	return generate(), nil
+	return generate()
 }
 
 // parseTableNames 解析逗号分隔的表名，并保留数据库原始标识符。
@@ -263,7 +266,7 @@ func (g *Gen) buildTableToModelNameStrategy() func(tableName string) string {
 }
 
 // generateAllTable 使用统一命名选项导出当前数据库全部表。
-func (g *Gen) generateAllTable(generator *gen.Generator) []interface{} {
+func (g *Gen) generateAllTable(generator *gen.Generator) ([]interface{}, error) {
 	if g.opts.driver == "doris" {
 		return g.generateAllDorisTables()
 	}
@@ -273,7 +276,7 @@ func (g *Gen) generateAllTable(generator *gen.Generator) []interface{} {
 			g.applyPostgresTableComment(postgresModelTableName(tableModel), tableModel)
 		}
 	}
-	return tableModels
+	return tableModels, nil
 }
 
 // buildModelOpts 汇总模型生成选项，包含字段命名策略、软删除字段映射与字段类型归一化。

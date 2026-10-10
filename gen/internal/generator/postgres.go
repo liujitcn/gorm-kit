@@ -23,7 +23,7 @@ func (g *Gen) applyPostgresTableComment(tableName string, tableModel interface{}
 		return
 	}
 	value := reflect.ValueOf(tableModel)
-	if value.Kind() != reflect.Ptr || value.Elem().Kind() != reflect.Struct {
+	if value.Kind() != reflect.Pointer || value.Elem().Kind() != reflect.Struct {
 		return
 	}
 	field := value.Elem().FieldByName("TableComment")
@@ -35,7 +35,7 @@ func (g *Gen) applyPostgresTableComment(tableName string, tableModel interface{}
 // postgresModelTableName 从 gorm/gen 生成模型上反射读取表名，供全表生成路径补写表注释。
 func postgresModelTableName(tableModel interface{}) string {
 	value := reflect.ValueOf(tableModel)
-	if value.Kind() != reflect.Ptr || value.Elem().Kind() != reflect.Struct {
+	if value.Kind() != reflect.Pointer || value.Elem().Kind() != reflect.Struct {
 		return ""
 	}
 	field := value.Elem().FieldByName("TableName")

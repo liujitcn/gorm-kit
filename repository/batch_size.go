@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	// 常见数据库单条 SQL 参数上限估算值（用于批量写入分批）。
-	defaultMaxSQLVars = 65535
+	// 跨数据库兼容的单条 SQL 参数上限估算值，兼容 SQLite 常见默认限制。
+	defaultMaxSQLVars = 999
 	// 自适应失败时的兜底批次。
 	defaultFallbackBatchSize = 100
 	// 防止单批过大导致 SQL 包体过大或事务过重。
@@ -49,12 +49,8 @@ func calcAutoBatchSize[T any](list []*T) int {
 // estimateInsertColumnCount 估算单行插入字段数。
 // 优先使用 gorm tag 字段数量；若拿不到则退回导出字段数量估算。
 func estimateInsertColumnCount[T any]() int {
-	var zero T
-	t := reflect.TypeOf(zero)
-	if t == nil {
-		return 0
-	}
-	if t.Kind() == reflect.Ptr {
+	t := reflect.TypeFor[T]()
+	if t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 	if t.Kind() != reflect.Struct {
@@ -75,7 +71,7 @@ func countInsertFieldsByGormTag(t reflect.Type) int {
 	for sf := range t.Fields() {
 		if sf.Anonymous {
 			et := sf.Type
-			if et.Kind() == reflect.Ptr {
+			if et.Kind() == reflect.Pointer {
 				et = et.Elem()
 			}
 			if et.Kind() == reflect.Struct {
@@ -90,8 +86,14 @@ func countInsertFieldsByGormTag(t reflect.Type) int {
 		if gormTag == "" {
 			continue
 		}
-		if strings.Contains(gormTag, "-") {
-			// gorm:"-" 表示忽略字段，不计入插入列数。
+		ignored := false
+		for _, tagOption := range strings.Split(gormTag, ";") {
+			if tagOption == "-" || tagOption == "-:all" {
+				ignored = true
+				break
+			}
+		}
+		if ignored {
 			continue
 		}
 		count++
@@ -105,7 +107,7 @@ func countExportedInsertFields(t reflect.Type) int {
 	for sf := range t.Fields() {
 		if sf.Anonymous {
 			et := sf.Type
-			if et.Kind() == reflect.Ptr {
+			if et.Kind() == reflect.Pointer {
 				et = et.Elem()
 			}
 			if et.Kind() == reflect.Struct {

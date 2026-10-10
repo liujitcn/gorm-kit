@@ -67,11 +67,6 @@ func GenerateConfig(opts ConfigOptions) error {
 		if source.name != "default" {
 			generatedPath = filepath.Join(basePath, source.directory)
 		}
-		if opts.Table == "" {
-			if err = generator.CleanOutputPath(generatedPath); err != nil {
-				return err
-			}
-		}
 		_, err = generator.NewGen(generator.Config{
 			Driver:      source.driver,
 			Source:      source.source,

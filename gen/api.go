@@ -1,4 +1,3 @@
-// Package gen 提供 GORM 数据模型、查询和 data 代码生成能力。
 package gen
 
 import "github.com/liujitcn/gorm-kit/gen/internal/config"

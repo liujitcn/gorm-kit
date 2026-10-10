@@ -2,6 +2,7 @@ package generator
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -109,25 +110,30 @@ func (f *dorisField) Comment() string {
 }
 
 // generateAllDorisTables 根据 Doris 元数据生成当前数据库全部模型。
-func (g *Gen) generateAllDorisTables() []interface{} {
+func (g *Gen) generateAllDorisTables() ([]interface{}, error) {
 	if g.db == nil {
-		panic("Doris 数据库连接未初始化")
+		return nil, errors.New("doris 数据库连接未初始化")
 	}
 	tableNames, err := g.db.Migrator().GetTables()
 	if err != nil {
-		panic(fmt.Errorf("读取 Doris 数据表失败: %w", err))
+		return nil, fmt.Errorf("读取 Doris 数据表失败: %w", err)
 	}
 	tableModels := make([]interface{}, 0, len(tableNames))
 	for _, tableName := range tableNames {
-		tableModels = append(tableModels, g.generateDorisModel(tableName))
+		var tableModel interface{}
+		tableModel, err = g.generateDorisModel(tableName)
+		if err != nil {
+			return nil, err
+		}
+		tableModels = append(tableModels, tableModel)
 	}
-	return tableModels
+	return tableModels, nil
 }
 
 // generateDorisModel 从 information_schema.columns 生成单个 Doris 模型。
-func (g *Gen) generateDorisModel(tableName string) interface{} {
+func (g *Gen) generateDorisModel(tableName string) (interface{}, error) {
 	if g.db == nil {
-		panic("Doris 数据库连接未初始化")
+		return nil, errors.New("doris 数据库连接未初始化")
 	}
 
 	var columns []dorisColumn
@@ -138,10 +144,10 @@ func (g *Gen) generateDorisModel(tableName string) interface{} {
 		ORDER BY ordinal_position
 	`, tableName).Scan(&columns).Error
 	if err != nil {
-		panic(fmt.Errorf("读取 Doris 表%s字段失败: %w", tableName, err))
+		return nil, fmt.Errorf("读取 Doris 表%s字段失败: %w", tableName, err)
 	}
 	if len(columns) == 0 {
-		panic(fmt.Errorf("Doris 表%s未发现字段", tableName))
+		return nil, fmt.Errorf("doris 表%s未发现字段", tableName)
 	}
 
 	tableComment := ""
@@ -152,7 +158,7 @@ func (g *Gen) generateDorisModel(tableName string) interface{} {
 		WHERE table_schema = DATABASE() AND table_name = ?
 	`, tableName).Scan(&table).Error
 	if err != nil {
-		panic(fmt.Errorf("读取 Doris 表%s注释失败: %w", tableName, err))
+		return nil, fmt.Errorf("读取 Doris 表%s注释失败: %w", tableName, err)
 	}
 	if table.TableComment.Valid {
 		tableComment = table.TableComment.String
@@ -180,11 +186,11 @@ func (g *Gen) generateDorisModel(tableName string) interface{} {
 		fields:       modelFields,
 	}
 	if g.gormGenerator == nil {
-		panic("Doris gorm/gen 生成器未初始化")
+		return nil, errors.New("doris gorm/gen 生成器未初始化")
 	}
 	meta := g.gormGenerator.GenerateModelFrom(object)
 	meta.TableComment = tableComment
-	return meta
+	return meta, nil
 }
 
 // buildDorisField 将 Doris 字段元数据转换为 gorm/gen helper.Field。

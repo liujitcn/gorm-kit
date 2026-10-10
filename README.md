@@ -70,6 +70,12 @@ userRepository := repository.NewBaseRepository(
 - `PageDefault`：统一补齐分页默认值，默认 `page=1`、`size=10`
 - `PageOffsetLimit`：基于补齐后的分页参数计算 `offset` 与 `limit`
 
+写入与更新：
+
+- `BatchCreate`：根据实体字段数估算批次，按单条 SQL 最多 999 个参数分批，单批最多 1000 条；无法估算字段数时回退为每批 100 条
+- `Delete`、`Update`：应用查询选项后仍须形成实际 `WHERE` 条件；仅传入空选项或不产生条件的选项不会执行全表写操作
+- `DeleteByID`、`DeleteByIDs`、`UpdateByID`：通过主键自动添加条件
+
 ## gen
 
 `gen` 当前支持：

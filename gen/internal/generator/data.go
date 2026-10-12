@@ -124,9 +124,13 @@ func extractTableMeta(tableModel any) (tableMeta, bool) {
 }
 
 // markViewTables 查询表类型，并标记不应参与自动迁移的视图。
+// Doris 方言的 migrator 未实现 TableType，改查 information_schema.tables 的 TABLE_TYPE。
 func markViewTables(db *gorm.DB, tables []tableMeta) error {
 	if len(tables) == 0 {
 		return nil
+	}
+	if strings.EqualFold(db.Dialector.Name(), "doris") {
+		return markDorisViewTables(db, tables)
 	}
 	var err error
 	for i := range tables {
@@ -139,6 +143,29 @@ func markViewTables(db *gorm.DB, tables []tableMeta) error {
 			return fmt.Errorf("读取表%s类型失败: %w", tables[i].TableName, err)
 		}
 		tables[i].IsView = strings.Contains(strings.ToUpper(tableType.Type()), "VIEW")
+	}
+	return nil
+}
+
+// markDorisViewTables 通过 information_schema.tables 标记 Doris 数据库中的视图。
+func markDorisViewTables(db *gorm.DB, tables []tableMeta) error {
+	var viewNames []string
+	err := db.Raw(`
+		SELECT table_name
+		FROM information_schema.tables
+		WHERE table_schema = DATABASE() AND table_type = 'VIEW'
+	`).Scan(&viewNames).Error
+	if err != nil {
+		return fmt.Errorf("读取 Doris 视图列表失败: %w", err)
+	}
+	views := make(map[string]struct{}, len(viewNames))
+	for _, name := range viewNames {
+		views[name] = struct{}{}
+	}
+	for i := range tables {
+		if _, ok := views[tables[i].TableName]; ok {
+			tables[i].IsView = true
+		}
 	}
 	return nil
 }

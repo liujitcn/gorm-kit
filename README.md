@@ -1,114 +1,130 @@
 # gorm-kit
 
-`gorm-kit` 是一个基于 GORM 的通用工具仓库，当前主要包含两个模块：
+`gorm-kit` 是基于 GORM 和 `gorm/gen` 的 Go 工具仓库，提供通用仓储实现与数据库代码生成器。仓库包含两个相互独立的 Go module：
 
-- `repository`：通用仓储能力与函数式查询选项
-- `gen`：基于 `gorm/gen` 的代码生成入口
+| module | 目录 | 作用 |
+| --- | --- | --- |
+| `github.com/liujitcn/gorm-kit` | 根目录 | `repository` 通用仓储、分页和强类型查询选项 |
+| `github.com/liujitcn/gorm-kit/gen` | `gen/` | 根据数据库结构生成 `models`、`query` 和 `data` 代码 |
 
-## 目录说明
+生成器输出的 `data` 包会引用根 module 的 `repository` 包，因此使用生成代码的业务 module 通常需要同时依赖这两个 module。
 
-- `repository/`：仓储接口、分页、批量写入策略、函数式查询选项
-- `gen/`：生成 `models`、`query`、`data` 的代码生成器
+## 能力概览
 
-## 工具链与测试
+- 泛型 `BaseRepository[T]`：覆盖创建、批量创建、查询、分页、统计、更新和删除。
+- 强类型查询选项：直接接收 `gorm/gen` 字段表达式，支持条件、排序、连接、分组、预加载和底层子句。
+- 写操作保护：`Delete` 和 `Update` 要求最终 DAO 中存在实际 `WHERE` 条件，避免无条件全表写入。
+- 自适应批量写入：依据实体字段数估算单批大小，兼容常见 SQL 参数上限并限制最大批次。
+- 配置驱动生成：读取服务配置中的 `data.database` 或 `data.databases`，按数据源和表范围生成代码。
+- 多数据库生成：支持 MySQL、Doris、PostgreSQL、SQLite、SQL Server、Oracle 和 BigQuery 的驱动注册。
+- 生成运行时骨架：输出查询入口、事务封装、数据访问对象、Wire `ProviderSet` 和按表生成的基础仓储。
 
-本仓库要求 Go 1.27.0 或更高版本，根目录与 `gen` 目录是相互独立的 Go module，需分别执行测试。
+## 环境要求
 
-格式化依赖 `goimports`，执行 `make fmt` 前需先确保本机已安装 `goimports`。
+- Go 1.27.0 或更高版本。
+- 运行生成器时，目标数据库必须可访问，连接串由配置文件提供。
+- 执行 `make fmt` 需要 `goimports`；执行 `make init` 可安装日常开发工具和生成器命令。
 
-初始化开发环境执行 `make init`，会安装 `gorm-gen` 生成插件和 `goimports` 命令。
+## 快速开始
 
-Go import 别名规范化命令由 `kratos-kit` 提供，可在本仓库预览或写回结果：
-
-```bash
-make cli
-make fmt
-```
-
-`make cli` 会安装规范化命令，`make fmt` 再运行规范化命令并执行 `goimports`。
-
-本仓库包含根目录与 `gen` 两个 Go module，提交前需分别执行测试：
+### 验证两个 module
 
 ```bash
 go test ./...
-cd gen && go test ./...
+(cd gen && go test ./...)
 ```
 
-## repository
+### 初始化工具
 
-`repository` 层直接复用 `gorm/gen` 的强类型字段构建查询。`NewBaseRepository` 需要显式传入：
+```bash
+make init
+```
 
-- `queryDAO`
-- 主键字段访问器
-- 实体主键读取函数
+`make init` 会安装当前仓库的生成器命令和格式化所需的 `goimports`。需要格式化时执行：
 
-示例：
+```bash
+make fmt
+```
+
+### 使用仓储
+
+仓储需要三个与生成查询代码绑定的函数：返回当前上下文的 DAO、返回主键字段和读取实体主键。下面的 `query.User`、`model.User` 是生成器输出的示例名称：
 
 ```go
 userRepository := repository.NewBaseRepository(
-    func(ctx context.Context) gen.Dao { return query.Use(db).User.WithContext(ctx) },
-    func(ctx context.Context) field.Int64 { return query.Use(db).User.WithContext(ctx).ID },
-    func(entity *model.User) int64 { return entity.ID },
+	func(ctx context.Context) gen.Dao {
+		return query.Use(db).User.WithContext(ctx)
+	},
+	func(ctx context.Context) field.Int64 {
+		return query.Use(db).User.WithContext(ctx).ID
+	},
+	func(entity *model.User) int64 {
+		return entity.ID
+	},
 )
 ```
 
-常用 `QueryOption` 包括：
+仓储方法、查询选项和边界行为见 [docs/repository.md](docs/repository.md)。
 
-- `Where`、`Not`、`Or`
-- `Select`、`Distinct`、`Omit`
-- `Join`、`LeftJoin`、`RightJoin`
-- `Group`、`Having`
-- `Order`、`Limit`、`Offset`
-- `Attrs`、`Assign`
-- `Joins`、`Preload`
-- `Clauses`
-- `Scope`、`Scopes`
-- `Unscoped`
-
-分页辅助方法：
-
-- `PageDefault`：统一补齐分页默认值，默认 `page=1`、`size=10`
-- `PageOffsetLimit`：基于补齐后的分页参数计算 `offset` 与 `limit`
-
-写入与更新：
-
-- `BatchCreate`：根据实体字段数估算批次，按单条 SQL 最多 999 个参数分批，单批最多 1000 条；无法估算字段数时回退为每批 100 条
-- `Delete`、`Update`：应用查询选项后仍须形成实际 `WHERE` 条件；仅传入空选项或不产生条件的选项不会执行全表写操作
-- `DeleteByID`、`DeleteByIDs`、`UpdateByID`：通过主键自动添加条件
-
-## gen
-
-`gen` 当前支持：
-
-- 默认读取服务 `./configs/data.yaml`，支持 `data.database` 和 `data.databases`
-- 支持 `-database` 选择命名数据源；指定名称始终用于生成目录，不存在时连接配置回退到默认数据源
-- `table` 支持逗号分隔的多表，例如 `user,user2`
-- 默认数据源输出到 `base_path`，命名数据源输出到 `base_path/<数据源>`
-- 全量生成只清理目标数据源目录下的 `query`、`models`、`data`，保留其他目录
-- 每套 `data` 生成 `Models()`、`NewData(databases map[string]*databaseGorm.Client)` 和包含仓储依赖的 `ProviderSet`；`NewData` 在客户端 map 为空或缺少默认客户端时返回错误，命名数据源额外导出客户端名称常量
-- 数据库客户端由外部统一创建并以 map 传入 `NewData`；默认数据源使用 `databaseGorm.DefaultClientName`，命名数据源使用生成的客户端名称常量选择对应客户端
-- 命令行只负责选择配置、数据源、表和生成根目录，连接与驱动统一从服务配置读取
-- 生成模板拆分在 `gen/internal/generator/templates/*.tmpl`，并通过 `go:embed` 嵌入生成器
-- 生成模型、Repository 与字段名称时保留统一缩写表全大写，包含 GORM 内置缩写以及 `SKU`、`SPU`、`LLM` 等业务扩展缩写
-- 全量生成清空对应数据源目录下的 `query`、`models`、`data`；单表生成保留其他表产物
-
-示例：
+### 使用生成器
 
 ```bash
 cd gen
 go run ./cmd/gorm-gen -h
-go run ./cmd/gorm-gen
-go run ./cmd/gorm-gen -database=main
-go run ./cmd/gorm-gen -config=./configs/data.yaml -database=main -table=user,user2
+go run ./cmd/gorm-gen -config=./configs/data.yaml
+go run ./cmd/gorm-gen -config=./configs/data.yaml -database=main
+go run ./cmd/gorm-gen -config=./configs/data.yaml -database=main -table=user,user_profile
 ```
 
-当前支持的参数：
+默认配置文件是执行目录下的 `./configs/data.yaml`，默认输出根目录是 `gen`。生成器的配置格式、数据源选择和输出清理规则见 [gen/README.md](gen/README.md)。
 
-- `config`
-- `database`
-- `table`
-- `base_path`
+## 目录结构
 
-更完整说明见：
+```text
+.
+├── repository/       # 通用仓储与查询选项
+├── gen/              # 独立的代码生成 module
+│   ├── cmd/gorm-gen/ # 命令行入口
+│   ├── internal/     # 配置解析、元数据读取和模板生成
+│   └── configs/      # 默认配置示例
+├── scripts/          # 仓库维护脚本
+├── Makefile          # 初始化、格式化和发布辅助命令
+├── go.mod            # 根 module
+└── gen/go.mod        # 生成器 module
+```
 
-- [gen/README.md](./gen/README.md)
+## 生成结果
+
+以默认输出目录 `gen` 为例，生成器会创建以下目录：
+
+```text
+gen/
+├── models/  # GORM 模型、字段标签和表注释方法
+├── query/   # gorm/gen 强类型查询入口
+└── data/    # Data、事务、迁移模型、ProviderSet 和基础仓储
+```
+
+命名数据源会生成到 `base_path/<数据源目录>`，目录名由数据源名称中的字母和数字组成。全量生成只清理目标数据源下的 `query`、`models` 和 `data`；指定表生成时保留其他表的既有产物，并重建聚合入口。
+
+生成的 `data.Models()` 会排除数据库视图，避免把视图加入自动迁移模型；视图仍可生成查询和基础仓储代码。`NewData` 接收外部创建的数据库客户端映射，并把事务查询对象写入上下文，仓储可在事务内透明复用。
+
+## Makefile 命令
+
+| 命令 | 作用 |
+| --- | --- |
+| `make init` | 安装生成器命令、格式化工具和日常 CLI |
+| `make plugin` | 仅安装 `gorm-gen` 命令 |
+| `make cli` | 安装 `goimports` 和 import 规范化命令 |
+| `make fmt` | 规范化 Go import 并执行 `goimports` |
+| `make tag` | 运行仓库内置的递归版本标记脚本 |
+
+## 验证约定
+
+代码改动至少应分别验证根 module 和 `gen` module：
+
+```bash
+go test ./...
+(cd gen && go test ./...)
+```
+
+生成器改动还应使用一个可访问的数据源执行实际生成，并检查 `models`、`query`、`data` 三个目录中的产物能通过业务 module 编译。

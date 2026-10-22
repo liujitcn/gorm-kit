@@ -16,7 +16,7 @@
 - 写操作保护：`Delete` 和 `Update` 要求最终 DAO 中存在实际 `WHERE` 条件，避免无条件全表写入。
 - 自适应批量写入：依据实体字段数估算单批大小，兼容常见 SQL 参数上限并限制最大批次。
 - 配置驱动生成：读取服务配置中的 `data.database` 或 `data.databases`，按数据源和表范围生成代码。
-- 多数据库生成：支持 MySQL、Doris、PostgreSQL、SQLite、SQL Server、Oracle 和 BigQuery 的驱动注册。
+- 多数据库生成：支持 MySQL、TiDB、Doris、PostgreSQL、SQLite、SQL Server、Oracle 和 BigQuery 的驱动注册。
 - 生成运行时骨架：输出查询入口、事务封装、数据访问对象、Wire `ProviderSet` 和按表生成的基础仓储。
 
 ## 环境要求

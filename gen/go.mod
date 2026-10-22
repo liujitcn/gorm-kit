@@ -6,7 +6,7 @@ require (
 	github.com/liujitcn/go-utils v0.0.43
 	github.com/liujitcn/kratos-kit/database/gorm/driver v0.0.24
 	github.com/liujitcn/kratos-kit/database/gorm/driver/bigquery v0.0.23
-	github.com/liujitcn/kratos-kit/database/gorm/driver/mysql v0.0.28
+	github.com/liujitcn/kratos-kit/database/gorm/driver/mysql v0.0.29
 	github.com/liujitcn/kratos-kit/database/gorm/driver/oracle v0.0.24
 	github.com/liujitcn/kratos-kit/database/gorm/driver/postgres v0.0.25
 	github.com/liujitcn/kratos-kit/database/gorm/driver/sqlite v0.0.23

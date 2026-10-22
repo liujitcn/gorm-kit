@@ -70,6 +70,11 @@ data:
 - `driver`：数据库驱动名称；省略时按生成器默认值 `mysql` 处理。
 - `source`：传给 GORM 方言的连接串。
 
+TiDB 使用 `driver: tidb` 和 MySQL 兼容的连接串，例如
+`root:password@tcp(127.0.0.1:4000)/shop?charset=utf8mb4&parseTime=true&loc=Local`。
+生成器会按 TiDB 的表、字段、索引和注释元数据生成 Model、Query 与 Data，生成结果可以直接交给
+`database/gorm` 的 `AutoMigrate` 重建表结构。
+
 ### 数据源选择规则
 
 1. `data.databases` 中的命名数据源按键名选择。
@@ -88,6 +93,7 @@ data:
 | `driver` 值 | 生成方式 |
 | --- | --- |
 | `mysql` | 使用 MySQL 方言读取表结构 |
+| `tidb` | 使用兼容 MySQL 协议的 TiDB 方言读取表结构 |
 | `doris` | 使用 MySQL 连接方言，并通过 `information_schema` 读取 Doris 元数据 |
 | `postgres` | 读取 PostgreSQL 表、索引、注释和二进制长度约束 |
 | `sqlite` | 使用 SQLite 方言读取表结构 |

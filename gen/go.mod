@@ -3,7 +3,7 @@ module github.com/liujitcn/gorm-kit/gen
 go 1.27.0
 
 require (
-	github.com/liujitcn/go-utils v0.0.43
+	github.com/liujitcn/go-utils v0.0.44
 	github.com/liujitcn/kratos-kit/database/gorm/driver v0.0.24
 	github.com/liujitcn/kratos-kit/database/gorm/driver/bigquery v0.0.23
 	github.com/liujitcn/kratos-kit/database/gorm/driver/mysql v0.0.29

@@ -9,6 +9,8 @@
 
 生成器输出的 `data` 包会引用根 module 的 `repository` 包，因此使用生成代码的业务 module 通常需要同时依赖这两个 module。
 
+生成器依赖 `github.com/liujitcn/go-utils v0.0.44`，通过 `stringcase` 包处理模型、仓储及数据源客户端的命名转换。
+
 ## 能力概览
 
 - 泛型 `BaseRepository[T]`：覆盖创建、批量创建、查询、分页、统计、更新和删除。

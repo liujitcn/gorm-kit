@@ -25,19 +25,13 @@ type modelCommentTemplateContext struct {
 }
 
 // generateModelCommentFile 为模型额外生成表注释方法，便于迁移阶段恢复表注释。
-func generateModelCommentFile(opts options, tableModels []interface{}) error {
-	var (
-		modelDir string
-		comments []modelCommentMeta
-		ctx      modelCommentTemplateContext
-		err      error
-	)
-
-	modelDir, err = resolveModelPath(opts.modelPkgPath)
+func generateModelCommentFile(opts options, tableModels []any) error {
+	modelDir, err := resolveModelPath(opts.modelPkgPath)
 	if err != nil {
 		return err
 	}
 
+	var comments []modelCommentMeta
 	comments, err = loadModelComments(tableModels)
 	if err != nil {
 		return err
@@ -54,7 +48,7 @@ func generateModelCommentFile(opts options, tableModels []interface{}) error {
 		}
 	}
 
-	ctx = modelCommentTemplateContext{
+	ctx := modelCommentTemplateContext{
 		PackageName: filepath.Base(modelDir),
 		Comments:    comments,
 	}
@@ -111,7 +105,7 @@ func receiverModelName(expression ast.Expr) string {
 }
 
 // mergeModelComments 使用本次生成结果替换同名模型注释并保留其他模型。
-func mergeModelComments(existingComments []modelCommentMeta, tableModels []interface{}) ([]modelCommentMeta, error) {
+func mergeModelComments(existingComments []modelCommentMeta, tableModels []any) ([]modelCommentMeta, error) {
 	commentMap := make(map[string]string, len(existingComments)+len(tableModels))
 	for _, comment := range existingComments {
 		commentMap[comment.ModelName] = comment.TableComment
@@ -137,7 +131,7 @@ func mergeModelComments(existingComments []modelCommentMeta, tableModels []inter
 }
 
 // loadModelComments 从 gorm/gen 导出的表结果中提取可生成的表注释信息。
-func loadModelComments(tableModels []interface{}) ([]modelCommentMeta, error) {
+func loadModelComments(tableModels []any) ([]modelCommentMeta, error) {
 	comments := make([]modelCommentMeta, 0, len(tableModels))
 	for _, tableModel := range tableModels {
 		comment, ok := extractModelCommentMeta(tableModel)
@@ -156,17 +150,19 @@ func loadModelComments(tableModels []interface{}) ([]modelCommentMeta, error) {
 }
 
 // extractModelCommentMeta 从 gorm/gen 返回对象中提取模型名和表注释。
-func extractModelCommentMeta(tableModel interface{}) (modelCommentMeta, bool) {
+func extractModelCommentMeta(tableModel any) (modelCommentMeta, bool) {
 	value, ok := indirectStructValue(tableModel)
 	if !ok {
 		return modelCommentMeta{}, false
 	}
 
-	modelName, ok := readStringField(value, "ModelStructName")
+	var modelName string
+	modelName, ok = readStringField(value, "ModelStructName")
 	if !ok || modelName == "" {
 		return modelCommentMeta{}, false
 	}
-	tableComment, ok := readStringField(value, "TableComment")
+	var tableComment string
+	tableComment, ok = readStringField(value, "TableComment")
 	if !ok {
 		return modelCommentMeta{}, false
 	}

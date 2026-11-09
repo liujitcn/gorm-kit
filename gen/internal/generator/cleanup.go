@@ -98,8 +98,8 @@ func resolveCleanupBasePath(path string) (string, error) {
 		var resolvedPath string
 		resolvedPath, err = filepath.EvalSymlinks(basePath)
 		if err == nil {
-			for i := len(missingParts) - 1; i >= 0; i-- {
-				resolvedPath = filepath.Join(resolvedPath, missingParts[i])
+			for _, missingPart := range slices.Backward(missingParts) {
+				resolvedPath = filepath.Join(resolvedPath, missingPart)
 			}
 			basePath = filepath.Clean(resolvedPath)
 			break

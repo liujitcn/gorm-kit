@@ -30,20 +30,7 @@ func calcAutoBatchSize[T any](list []*T) int {
 		return min(len(list), defaultFallbackBatchSize)
 	}
 
-	size := defaultMaxSQLVars / columnCount
-	if size <= 0 {
-		// 极端场景兜底，确保至少单条写入。
-		size = 1
-	}
-	if size > maxAutoBatchSize {
-		// 限制单批上限，避免单条 SQL 过大。
-		size = maxAutoBatchSize
-	}
-	if size > len(list) {
-		// 批次不能大于待写入数据量。
-		size = len(list)
-	}
-	return size
+	return min(max(defaultMaxSQLVars/columnCount, 1), maxAutoBatchSize, len(list))
 }
 
 // estimateInsertColumnCount 估算单行插入字段数。
@@ -87,7 +74,7 @@ func countInsertFieldsByGormTag(t reflect.Type) int {
 			continue
 		}
 		ignored := false
-		for _, tagOption := range strings.Split(gormTag, ";") {
+		for tagOption := range strings.SplitSeq(gormTag, ";") {
 			if tagOption == "-" || tagOption == "-:all" {
 				ignored = true
 				break

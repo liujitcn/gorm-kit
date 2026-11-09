@@ -110,7 +110,7 @@ func (f *dorisField) Comment() string {
 }
 
 // generateAllDorisTables 根据 Doris 元数据生成当前数据库全部模型。
-func (g *Gen) generateAllDorisTables() ([]interface{}, error) {
+func (g *Gen) generateAllDorisTables() ([]any, error) {
 	if g.db == nil {
 		return nil, errors.New("doris 数据库连接未初始化")
 	}
@@ -118,9 +118,9 @@ func (g *Gen) generateAllDorisTables() ([]interface{}, error) {
 	if err != nil {
 		return nil, fmt.Errorf("读取 Doris 数据表失败: %w", err)
 	}
-	tableModels := make([]interface{}, 0, len(tableNames))
+	tableModels := make([]any, 0, len(tableNames))
 	for _, tableName := range tableNames {
-		var tableModel interface{}
+		var tableModel any
 		tableModel, err = g.generateDorisModel(tableName)
 		if err != nil {
 			return nil, err
@@ -131,7 +131,7 @@ func (g *Gen) generateAllDorisTables() ([]interface{}, error) {
 }
 
 // generateDorisModel 从 information_schema.columns 生成单个 Doris 模型。
-func (g *Gen) generateDorisModel(tableName string) (interface{}, error) {
+func (g *Gen) generateDorisModel(tableName string) (any, error) {
 	if g.db == nil {
 		return nil, errors.New("doris 数据库连接未初始化")
 	}

@@ -41,7 +41,7 @@ type dataTemplateContext struct {
 }
 
 // generateDataFiles 根据 gorm/gen 导出的表结果生成或增量更新 data 包代码。
-func generateDataFiles(db *gorm.DB, opts options, tableModels []interface{}) error {
+func generateDataFiles(db *gorm.DB, opts options, tableModels []any) error {
 	dataDir, err := resolveDataPath(opts.dataPath)
 	if err != nil {
 		return err
@@ -78,7 +78,7 @@ func generateDataFiles(db *gorm.DB, opts options, tableModels []interface{}) err
 }
 
 // loadTables 从 gorm/gen 导出的全部表结果中提取表元信息，并按字典序返回。
-func loadTables(tableModels []interface{}) ([]tableMeta, error) {
+func loadTables(tableModels []any) ([]tableMeta, error) {
 	metas := make([]tableMeta, 0, len(tableModels))
 	for _, tableModel := range tableModels {
 		meta, ok := extractTableMeta(tableModel)
@@ -129,7 +129,7 @@ func markViewTables(db *gorm.DB, tables []tableMeta) error {
 	if len(tables) == 0 {
 		return nil
 	}
-	if strings.EqualFold(db.Dialector.Name(), "doris") {
+	if strings.EqualFold(db.Name(), "doris") {
 		return markDorisViewTables(db, tables)
 	}
 	var err error
@@ -171,7 +171,7 @@ func markDorisViewTables(db *gorm.DB, tables []tableMeta) error {
 }
 
 // indirectStructValue 将输入解包为结构体值，兼容结构体与结构体指针。
-func indirectStructValue(v interface{}) (reflect.Value, bool) {
+func indirectStructValue(v any) (reflect.Value, bool) {
 	if v == nil {
 		return reflect.Value{}, false
 	}
@@ -205,7 +205,7 @@ func extractFirstPrimaryKeyField(value reflect.Value) string {
 		return "ID"
 	}
 	firstPrimaryKeyField := ""
-	for i := 0; i < fieldsValue.Len(); i++ {
+	for i := range fieldsValue.Len() {
 		fieldValue := fieldsValue.Index(i)
 		if fieldValue.Kind() == reflect.Pointer {
 			if fieldValue.IsNil() {
@@ -226,7 +226,8 @@ func extractFirstPrimaryKeyField(value reflect.Value) string {
 		if firstPrimaryKeyField == "" {
 			firstPrimaryKeyField = name
 		}
-		fieldType, ok := readStringField(fieldValue, "Type")
+		var fieldType string
+		fieldType, ok = readStringField(fieldValue, "Type")
 		if ok && fieldType == "int64" {
 			return name
 		}
@@ -262,7 +263,7 @@ func fieldHasPrimaryKeyTag(value reflect.Value) bool {
 	if !gormTag.IsValid() || gormTag.Kind() != reflect.String {
 		return false
 	}
-	for _, tag := range strings.Split(gormTag.String(), ";") {
+	for tag := range strings.SplitSeq(gormTag.String(), ";") {
 		if tag == field.TagKeyGormPrimaryKey || strings.HasPrefix(tag, field.TagKeyGormPrimaryKey+":") {
 			return true
 		}
@@ -277,7 +278,7 @@ func countPrimaryKeyFields(value reflect.Value) int {
 		return 0
 	}
 	count := 0
-	for i := 0; i < fieldsValue.Len(); i++ {
+	for i := range fieldsValue.Len() {
 		fieldValue := fieldsValue.Index(i)
 		if fieldValue.Kind() == reflect.Pointer {
 			if fieldValue.IsNil() {
@@ -394,10 +395,10 @@ func resolveModulePath(startDir string) (string, error) {
 
 // parseModulePath 从 go.mod 内容中提取 module 路径。
 func parseModulePath(content string) string {
-	for _, line := range strings.Split(content, "\n") {
+	for line := range strings.SplitSeq(content, "\n") {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "module ") {
-			return strings.TrimSpace(strings.TrimPrefix(line, "module "))
+		if after, ok := strings.CutPrefix(line, "module "); ok {
+			return strings.TrimSpace(after)
 		}
 	}
 	return ""

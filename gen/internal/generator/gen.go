@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/liujitcn/kratos-kit/database/gorm/driver"
@@ -36,13 +36,13 @@ func NewGen(config Config) *Gen {
 }
 
 // Generate 按配置执行全部表或单表代码生成，并返回本次生成的表结果。
-func (g *Gen) Generate() ([]interface{}, error) {
+func (g *Gen) Generate() ([]any, error) {
 	generator, err := g.newGenerator()
 	if err != nil {
 		return nil, err
 	}
 
-	var tableModels []interface{}
+	var tableModels []any
 	tableModels, err = g.generateTableModels(generator)
 	if err != nil {
 		return nil, err
@@ -122,8 +122,8 @@ func loadGeneratedTableMetas(modelPath string, queryPath string) ([]tableMeta, e
 	if len(tables) == 0 {
 		return nil, fmt.Errorf("生成目录中未发现模型文件")
 	}
-	sort.Slice(tables, func(i, j int) bool {
-		return tables[i].TableName < tables[j].TableName
+	slices.SortFunc(tables, func(a, b tableMeta) int {
+		return strings.Compare(a.TableName, b.TableName)
 	})
 	return tables, nil
 }
@@ -144,17 +144,19 @@ func writeGeneratedQueryFile(queryPath string, tables []tableMeta) error {
 }
 
 // generateTableModels 根据 table 配置生成单张表或当前数据库全部表的模型元数据。
-func (g *Gen) generateTableModels(generator *gen.Generator) ([]interface{}, error) {
+func (g *Gen) generateTableModels(generator *gen.Generator) ([]any, error) {
+	var err error
 	if g.opts.table != "" {
-		tableNames, err := parseTableNames(g.opts.table)
+		var tableNames []string
+		tableNames, err = parseTableNames(g.opts.table)
 		if err != nil {
 			return nil, err
 		}
-		tableModels := make([]interface{}, 0, len(tableNames))
+		tableModels := make([]any, 0, len(tableNames))
 		for _, tableName := range tableNames {
 			// 指定多张表时先全部读取成功，再进入文件写入阶段。
-			var tableModel interface{}
-			tableModel, err = generateTableModel(tableName, func() (interface{}, error) {
+			var tableModel any
+			tableModel, err = generateTableModel(tableName, func() (any, error) {
 				if g.opts.driver == "doris" {
 					return g.generateDorisModel(tableName)
 				}
@@ -171,7 +173,8 @@ func (g *Gen) generateTableModels(generator *gen.Generator) ([]interface{}, erro
 		}
 		return tableModels, nil
 	}
-	tableModels, err := g.generateAllTable(generator)
+	var tableModels []any
+	tableModels, err = g.generateAllTable(generator)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +185,7 @@ func (g *Gen) generateTableModels(generator *gen.Generator) ([]interface{}, erro
 }
 
 // generateTableModel 将 gorm/gen 的单表生成 panic 转换为可由调用链处理的错误。
-func generateTableModel(tableName string, generate func() (interface{}, error)) (tableModel interface{}, err error) {
+func generateTableModel(tableName string, generate func() (any, error)) (tableModel any, err error) {
 	defer func() {
 		if recovered := recover(); recovered != nil {
 			err = fmt.Errorf("生成表%q失败: %v", tableName, recovered)
@@ -194,7 +197,7 @@ func generateTableModel(tableName string, generate func() (interface{}, error)) 
 // parseTableNames 解析逗号分隔的表名，并保留数据库原始标识符。
 func parseTableNames(value string) ([]string, error) {
 	names := make([]string, 0)
-	for _, name := range strings.Split(value, ",") {
+	for name := range strings.SplitSeq(value, ",") {
 		name = strings.TrimSpace(name)
 		if name == "" {
 			continue
@@ -266,7 +269,7 @@ func (g *Gen) buildTableToModelNameStrategy() func(tableName string) string {
 }
 
 // generateAllTable 使用统一命名选项导出当前数据库全部表。
-func (g *Gen) generateAllTable(generator *gen.Generator) ([]interface{}, error) {
+func (g *Gen) generateAllTable(generator *gen.Generator) ([]any, error) {
 	if g.opts.driver == "doris" {
 		return g.generateAllDorisTables()
 	}

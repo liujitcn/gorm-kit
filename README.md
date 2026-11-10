@@ -110,6 +110,8 @@ gen/
 
 生成的 `data.Models()` 返回 `[]any`，并排除数据库视图，避免把视图加入自动迁移模型；视图仍可生成查询和基础仓储代码。`NewData` 接收外部创建的 `map[string]*gorm.Client`，其中 `gorm` 使用 `github.com/liujitcn/kratos-kit/database/gorm` 的默认包名；事务查询对象会写入上下文，仓储可在事务内透明复用。
 
+使用 `gorm/gen` 标准元数据路径时，可空时间列生成 `*time.Time`，非空时间列保持 `time.Time`。既有项目重新生成后，需要同步适配时间赋值、比较、格式化和类型化字段的 `Value` 调用，并处理空指针。MySQL 的 `mediumtext`、`longtext` 列生成中性 `type:string` 和对应容量的 `size` 标签，MySQL 保留原容量类型，PostgreSQL 使用 `text`。
+
 ## Makefile 命令
 
 | 命令 | 作用 |

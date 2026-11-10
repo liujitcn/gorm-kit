@@ -15,7 +15,7 @@ import (
 // PG 会把表达式规范化出多层括号，闭合括号与比较符之间需容忍。
 var binarySizeDefPattern = regexp.MustCompile(`octet_length\(\s*"?([A-Za-z_0-9]+)"?\s*\)\s*\)*\s*<=\s*(\d+)`)
 
-// buildFieldTypeStrategy 构建字段类型归一化策略，把源库方言类型改写为多数据库通用的中立类型。
+// buildFieldTypeStrategy 依据列元数据保留可空时间语义，并把源库类型归一为跨数据库类型。
 func (g *Gen) buildFieldTypeStrategy() gen.ModelOpt {
 	return gen.FieldModify(func(field gen.Field) gen.Field {
 		if field == nil || field.ColumnName == "" {
@@ -24,38 +24,14 @@ func (g *Gen) buildFieldTypeStrategy() gen.ModelOpt {
 		table := ""
 		if field.Column != nil {
 			table = field.Column.TableName
+			nullable, ok := field.Column.Nullable()
+			if field.Type == "time.Time" && ok && nullable {
+				field.Type = "*time.Time"
+			}
 		}
 		normalizeFieldGormTag(field.GORMTag, field.Type, table, field.ColumnName, g.binarySizes)
 		return field
 	})
-}
-
-// normalizeFieldGormTag 就地归一化字段 type 标签；方言敏感类型直接去掉标签，交由 GORM 按目标驱动推导。
-// binarySizes 承载 PostgreSQL 源库中由长度检查约束找回的二进制列长度，其余源库传空。
-func normalizeFieldGormTag(tag field.GormTag, goType, table, column string, binarySizes map[string]map[string]int) {
-	types, ok := tag["type"]
-	if !ok || len(types) == 0 {
-		return
-	}
-	kind := driverFieldKind(strings.TrimPrefix(goType, "*"))
-	normalized := make([]string, 0, len(types))
-	for _, rawType := range types {
-		value, size, keep := driver.NormalizeColumnType(rawType, kind)
-		if !keep {
-			tag.Remove("type")
-			// bytea 无长度概念，长度信息由检查约束找回，保证与 MySQL 源库生成的模型一致。
-			if size == 0 && kind == driver.FieldKindBytes {
-				size = binarySizes[table][column]
-			}
-			if size > 0 {
-				// 带长度的二进制列把长度迁入 size 标签，MySQL 据此生成可索引的 varbinary(N)。
-				tag.Set("size", strconv.Itoa(size))
-			}
-			return
-		}
-		normalized = append(normalized, value)
-	}
-	tag.Set("type", normalized...)
 }
 
 // loadPostgresBinarySizes 收集 PostgreSQL 源库中 gormsize_ 前缀检查约束承载的二进制列长度。
@@ -87,6 +63,43 @@ func (g *Gen) loadPostgresBinarySizes() error {
 		g.binarySizes[row.TableName][matches[1]] = size
 	}
 	return nil
+}
+
+// normalizeFieldGormTag 保留大文本容量，并归一化类型标签；方言敏感类型交由目标驱动推导。
+// binarySizes 承载 PostgreSQL 检查约束中记录的二进制列长度，其余源库传空。
+func normalizeFieldGormTag(tag field.GormTag, goType, table, column string, binarySizes map[string]map[string]int) {
+	types, ok := tag["type"]
+	if !ok || len(types) == 0 {
+		return
+	}
+	kind := driverFieldKind(strings.TrimPrefix(goType, "*"))
+	normalized := make([]string, 0, len(types))
+	for _, rawType := range types {
+		// 使用中性 string 和原容量，避免 MySQL 收缩列类型，PostgreSQL 则落为 text。
+		switch strings.ToLower(rawType) {
+		case "mediumtext":
+			tag.Set("type", "string").Set("size", "16777215")
+			return
+		case "longtext":
+			tag.Set("type", "string").Set("size", "4294967295")
+			return
+		}
+		value, size, keep := driver.NormalizeColumnType(rawType, kind)
+		if !keep {
+			tag.Remove("type")
+			// bytea 无长度概念，长度信息由检查约束找回，保证与 MySQL 源库生成的模型一致。
+			if size == 0 && kind == driver.FieldKindBytes {
+				size = binarySizes[table][column]
+			}
+			if size > 0 {
+				// 带长度的二进制列把长度迁入 size 标签，MySQL 据此生成可索引的 varbinary(N)。
+				tag.Set("size", strconv.Itoa(size))
+			}
+			return
+		}
+		normalized = append(normalized, value)
+	}
+	tag.Set("type", normalized...)
 }
 
 // driverFieldKind 把 gorm-gen 的 Go 类型字符串归纳为共用映射的字段语义类别。

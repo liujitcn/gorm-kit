@@ -147,6 +147,8 @@ PostgreSQL 生成会额外读取表注释；`int2` 统一映射为 `int32`，`by
 - 表名和字段名按下划线转 Go 驼峰命名。
 - 常见缩写保持大写，包含生成器内置缩写和 `SKU`、`SPU`、`LLM` 等扩展缩写。
 - 生成索引、类型和字段标签，不生成单元测试文件。
+- 使用 `gorm/gen` 标准元数据路径时，可空时间列生成 `*time.Time`，非空时间列保持 `time.Time`；其他可空字段保留原有值类型。
+- `mediumtext`、`longtext` 生成中性 `type:string` 和对应容量的 `size` 标签，MySQL 保留原容量类型，PostgreSQL 使用 `text`。
 - `deleted_at` 为 `BIGINT` 或等价 64 位整数时映射为 `soft_delete.DeletedAt`，并设置毫秒级软删除标签；其他类型保持原始类型。
 - 表注释生成到 `TableComment()` 方法，供迁移或业务代码读取。
 

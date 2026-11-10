@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	databaseGorm "github.com/liujitcn/kratos-kit/database/gorm"
+	"github.com/liujitcn/kratos-kit/database/gorm"
 	"{{ .ModelImportPath }}"
 	"{{ .QueryImportPath }}"
 )
@@ -22,7 +22,7 @@ func Models() []any {
 
 {{- if .NamedSource }}
 // {{ .GormClientType }}Name 表示当前 GORM 客户端名称。
-const {{ .GormClientType }}Name = {{ if eq .SourceName "default" }}databaseGorm.DefaultClientName{{ else }}{{ printf "%q" .SourceName }}{{ end }}
+const {{ .GormClientType }}Name = {{ if eq .SourceName "default" }}gorm.DefaultClientName{{ else }}{{ printf "%q" .SourceName }}{{ end }}
 
 {{- end }}
 
@@ -41,11 +41,11 @@ type Data struct {
 }
 
 // NewData 初始化数据访问对象，并构建默认查询入口。
-func NewData(databases map[string]*databaseGorm.Client) (*Data, error) {
+func NewData(databases map[string]*gorm.Client) (*Data, error) {
 	if len(databases) == 0 {
 		return nil, errors.New("数据库客户端映射不能为空")
 	}
-	defaultClient, ok := databases[databaseGorm.DefaultClientName]
+	defaultClient, ok := databases[gorm.DefaultClientName]
 	if !ok || defaultClient == nil || defaultClient.DB == nil {
 		return nil, errors.New("默认数据库客户端不存在")
 	}

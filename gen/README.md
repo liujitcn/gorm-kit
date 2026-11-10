@@ -162,7 +162,7 @@ PostgreSQL 生成会额外读取表注释；`int2` 统一映射为 `int32`，`by
 ### `data`
 
 - `Models() []any`：返回当前数据源的全部迁移模型，视图不会加入该列表。
-- `NewData(map[string]*databaseGorm.Client)`：从外部客户端映射构造数据访问对象。
+- `NewData(map[string]*gorm.Client)`：从外部客户端映射构造数据访问对象。
 - `QueryProvider`：按上下文取得查询入口。
 - `Transaction`：把事务态查询对象写入上下文，使仓储自动复用当前事务。
 - `ProviderSet`：提供 `NewData`、`NewTransaction` 和每张表的基础仓储构造器。
